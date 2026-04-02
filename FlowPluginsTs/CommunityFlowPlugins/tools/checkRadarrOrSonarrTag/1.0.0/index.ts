@@ -64,6 +64,17 @@ const details = (): IpluginDetails => ({
       },
       tooltip: 'The tag name to check for (case-insensitive)',
     },
+    {
+      label: 'Monitored Check',
+      name: 'monitored_check',
+      type: 'string',
+      defaultValue: "Don't Check",
+      inputUI: {
+        type: 'dropdown',
+        options: ["Don't Check", 'Check Monitored', 'Check Unmonitored'],
+      },
+      tooltip: 'Optionally check if the parsed item is monitored or unmonitored',
+    },
   ],
   outputs: [
     {
@@ -84,9 +95,16 @@ interface ITag {
 
 interface IParseResponse {
   data: {
-    movie?: { id: number, tags?: number[] },
-    series?: { id: number, tags?: number[] },
+    movie?: { id: number, tags?: number[], monitored?: boolean },
+    series?: { id: number, tags?: number[], monitored?: boolean },
+    episodes?: Array<{ monitored?: boolean }>,
   },
+}
+
+interface ILookupResult {
+  id: number,
+  tags: number[],
+  monitored: boolean | null,
 }
 
 interface IArrApp {
@@ -94,19 +112,20 @@ interface IArrApp {
   host: string,
   headers: Record<string, string>,
   content: string,
-  getIdAndTags: (parseResponse: IParseResponse) => { id: number, tags: number[] },
+  getLookupData: (parseResponse: IParseResponse) => ILookupResult,
 }
 
 const getId = async (
   args: IpluginInputArgs,
   arrApp: IArrApp,
   fileName: string,
+  forceParseLookup: boolean,
 ) => {
   const imdbIdMatch = /\btt\d{7,10}\b/i.exec(fileName);
   const imdbId = imdbIdMatch ? imdbIdMatch[0] : '';
-  let result = { id: -1, tags: [] as number[] };
+  let result: ILookupResult = { id: -1, tags: [], monitored: null };
 
-  if (imdbId !== '') {
+  if (imdbId !== '' && !forceParseLookup) {
     try {
       const lookupResponse = await args.deps.axios({
         method: 'get',
@@ -115,7 +134,11 @@ const getId = async (
       });
       const item = lookupResponse.data && lookupResponse.data[0];
       if (item && item.id) {
-        result = { id: item.id, tags: item.tags || [] };
+        result = {
+          id: item.id,
+          tags: item.tags || [],
+          monitored: typeof item.monitored === 'boolean' ? item.monitored : null,
+        };
       }
     } catch (error) {
       args.jobLog(`Failed to lookup by IMDB ID: ${error}`);
@@ -131,8 +154,10 @@ const getId = async (
         url: `${arrApp.host}/api/v3/parse?title=${encodeURIComponent(getFileName(fileName))}`,
         headers: arrApp.headers,
       });
-      result = arrApp.getIdAndTags(parseResponse);
-      args.jobLog(`${arrApp.content} ${result.id !== -1 ? `'${result.id}' found` : 'not found'} for '${getFileName(fileName)}'`);
+      result = arrApp.getLookupData(parseResponse);
+      args.jobLog(
+        `${arrApp.content} ${result.id !== -1 ? `'${result.id}' found` : 'not found'} for '${getFileName(fileName)}'`,
+      );
     } catch (error) {
       args.jobLog(`Failed to parse filename: ${error}`);
     }
@@ -151,6 +176,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const arr_host = String(args.inputs.arr_host).trim();
   const arrHost = arr_host.endsWith('/') ? arr_host.slice(0, -1) : arr_host;
   const tagName = String(args.inputs.tag_name).trim().toLowerCase();
+  const monitoredCheck = String(args.inputs.monitored_check || "Don't Check");
   const originalFileName = args.originalLibraryFile?._id ?? '';
   const currentFileName = args.inputFileObj?._id ?? '';
 
@@ -175,9 +201,12 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       host: arrHost,
       headers,
       content: 'Movie',
-      getIdAndTags: (parseResponse: IParseResponse) => ({
+      getLookupData: (parseResponse: IParseResponse) => ({
         id: Number(parseResponse?.data?.movie?.id ?? -1),
         tags: parseResponse?.data?.movie?.tags || [],
+        monitored: typeof parseResponse?.data?.movie?.monitored === 'boolean'
+          ? parseResponse.data.movie.monitored
+          : null,
       }),
     }
     : {
@@ -185,17 +214,26 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       host: arrHost,
       headers,
       content: 'Series',
-      getIdAndTags: (parseResponse: IParseResponse) => ({
+      getLookupData: (parseResponse: IParseResponse) => ({
         id: Number(parseResponse?.data?.series?.id ?? -1),
         tags: parseResponse?.data?.series?.tags || [],
+        monitored: typeof parseResponse?.data?.episodes?.[0]?.monitored === 'boolean'
+          ? parseResponse.data.episodes?.[0]?.monitored ?? null
+          : (typeof parseResponse?.data?.series?.monitored === 'boolean'
+            ? parseResponse.data.series.monitored
+            : null),
       }),
     };
 
   args.jobLog(`Checking for tag '${tagName}' in ${arrApp.name}...`);
+  if (monitoredCheck !== "Don't Check") {
+    args.jobLog(`Monitored option selected: '${monitoredCheck}'`);
+  }
 
-  let result = await getId(args, arrApp, originalFileName);
+  const forceParseLookup = monitoredCheck !== "Don't Check";
+  let result = await getId(args, arrApp, originalFileName, forceParseLookup);
   if (result.id === -1 && currentFileName !== originalFileName) {
-    result = await getId(args, arrApp, currentFileName);
+    result = await getId(args, arrApp, currentFileName, forceParseLookup);
   }
 
   if (result.id !== -1) {
@@ -246,9 +284,26 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     args.jobLog(`${arrApp.content} not found in ${arrApp.name}`);
   }
 
+  let monitoredCheckPassed = true;
+  if (monitoredCheck === 'Check Monitored') {
+    monitoredCheckPassed = result.monitored === true;
+    args.jobLog(
+      monitoredCheckPassed
+        ? 'Monitored check passed (item is monitored)'
+        : `Monitored check failed (${result.monitored === false ? 'item is unmonitored' : 'monitored state unavailable'})`,
+    );
+  } else if (monitoredCheck === 'Check Unmonitored') {
+    monitoredCheckPassed = result.monitored === false;
+    args.jobLog(
+      monitoredCheckPassed
+        ? 'Unmonitored check passed (item is unmonitored)'
+        : `Unmonitored check failed (${result.monitored === true ? 'item is monitored' : 'monitored state unavailable'})`,
+    );
+  }
+
   return {
     outputFileObj: args.inputFileObj,
-    outputNumber: tagFound ? 1 : 2,
+    outputNumber: tagFound && monitoredCheckPassed ? 1 : 2,
     variables: args.variables,
   };
 };
@@ -257,4 +312,3 @@ export {
   details,
   plugin,
 };
-

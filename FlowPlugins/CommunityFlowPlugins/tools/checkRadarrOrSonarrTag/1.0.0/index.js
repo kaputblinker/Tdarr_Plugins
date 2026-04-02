@@ -97,6 +97,17 @@ var details = function () { return ({
             },
             tooltip: 'The tag name to check for (case-insensitive)',
         },
+        {
+            label: 'Monitored Check',
+            name: 'monitored_check',
+            type: 'string',
+            defaultValue: "Don't Check",
+            inputUI: {
+                type: 'dropdown',
+                options: ["Don't Check", 'Check Monitored', 'Check Unmonitored'],
+            },
+            tooltip: 'Optionally check if the parsed item is monitored or unmonitored',
+        },
     ],
     outputs: [
         {
@@ -110,15 +121,15 @@ var details = function () { return ({
     ],
 }); };
 exports.details = details;
-var getId = function (args, arrApp, fileName) { return __awaiter(void 0, void 0, void 0, function () {
+var getId = function (args, arrApp, fileName, forceParseLookup) { return __awaiter(void 0, void 0, void 0, function () {
     var imdbIdMatch, imdbId, result, lookupResponse, item, error_1, parseResponse, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 imdbIdMatch = /\btt\d{7,10}\b/i.exec(fileName);
                 imdbId = imdbIdMatch ? imdbIdMatch[0] : '';
-                result = { id: -1, tags: [] };
-                if (!(imdbId !== '')) return [3 /*break*/, 4];
+                result = { id: -1, tags: [], monitored: null };
+                if (!(imdbId !== '' && !forceParseLookup)) return [3 /*break*/, 4];
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
@@ -131,7 +142,11 @@ var getId = function (args, arrApp, fileName) { return __awaiter(void 0, void 0,
                 lookupResponse = _a.sent();
                 item = lookupResponse.data && lookupResponse.data[0];
                 if (item && item.id) {
-                    result = { id: item.id, tags: item.tags || [] };
+                    result = {
+                        id: item.id,
+                        tags: item.tags || [],
+                        monitored: typeof item.monitored === 'boolean' ? item.monitored : null,
+                    };
                 }
                 return [3 /*break*/, 4];
             case 3:
@@ -151,7 +166,7 @@ var getId = function (args, arrApp, fileName) { return __awaiter(void 0, void 0,
                     })];
             case 6:
                 parseResponse = _a.sent();
-                result = arrApp.getIdAndTags(parseResponse);
+                result = arrApp.getLookupData(parseResponse);
                 args.jobLog("".concat(arrApp.content, " ").concat(result.id !== -1 ? "'".concat(result.id, "' found") : 'not found', " for '").concat((0, fileUtils_1.getFileName)(fileName), "'"));
                 return [3 /*break*/, 8];
             case 7:
@@ -163,7 +178,7 @@ var getId = function (args, arrApp, fileName) { return __awaiter(void 0, void 0,
     });
 }); };
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, tagFound, arr, arr_host, arrHost, tagName, originalFileName, currentFileName, headers, arrApp, result, tagsResponse, tags, targetTag, i, hasTag, i, error_3;
+    var lib, tagFound, arr, arr_host, arrHost, tagName, monitoredCheck, originalFileName, currentFileName, headers, arrApp, forceParseLookup, result, tagsResponse, tags, targetTag, i, hasTag, i, error_3, monitoredCheckPassed;
     var _a, _b, _c, _d;
     return __generator(this, function (_e) {
         switch (_e.label) {
@@ -176,6 +191,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 arr_host = String(args.inputs.arr_host).trim();
                 arrHost = arr_host.endsWith('/') ? arr_host.slice(0, -1) : arr_host;
                 tagName = String(args.inputs.tag_name).trim().toLowerCase();
+                monitoredCheck = String(args.inputs.monitored_check || "Don't Check");
                 originalFileName = (_b = (_a = args.originalLibraryFile) === null || _a === void 0 ? void 0 : _a._id) !== null && _b !== void 0 ? _b : '';
                 currentFileName = (_d = (_c = args.inputFileObj) === null || _c === void 0 ? void 0 : _c._id) !== null && _d !== void 0 ? _d : '';
                 if (!tagName) {
@@ -197,11 +213,14 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         host: arrHost,
                         headers: headers,
                         content: 'Movie',
-                        getIdAndTags: function (parseResponse) {
-                            var _a, _b, _c, _d, _e;
+                        getLookupData: function (parseResponse) {
+                            var _a, _b, _c, _d, _e, _f, _g;
                             return ({
                                 id: Number((_c = (_b = (_a = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _a === void 0 ? void 0 : _a.movie) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : -1),
                                 tags: ((_e = (_d = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _d === void 0 ? void 0 : _d.movie) === null || _e === void 0 ? void 0 : _e.tags) || [],
+                                monitored: typeof ((_g = (_f = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _f === void 0 ? void 0 : _f.movie) === null || _g === void 0 ? void 0 : _g.monitored) === 'boolean'
+                                    ? parseResponse.data.movie.monitored
+                                    : null,
                             });
                         },
                     }
@@ -210,20 +229,29 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         host: arrHost,
                         headers: headers,
                         content: 'Series',
-                        getIdAndTags: function (parseResponse) {
-                            var _a, _b, _c, _d, _e;
+                        getLookupData: function (parseResponse) {
+                            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
                             return ({
                                 id: Number((_c = (_b = (_a = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _a === void 0 ? void 0 : _a.series) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : -1),
                                 tags: ((_e = (_d = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _d === void 0 ? void 0 : _d.series) === null || _e === void 0 ? void 0 : _e.tags) || [],
+                                monitored: typeof ((_h = (_g = (_f = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _f === void 0 ? void 0 : _f.episodes) === null || _g === void 0 ? void 0 : _g[0]) === null || _h === void 0 ? void 0 : _h.monitored) === 'boolean'
+                                    ? (_l = (_k = (_j = parseResponse.data.episodes) === null || _j === void 0 ? void 0 : _j[0]) === null || _k === void 0 ? void 0 : _k.monitored) !== null && _l !== void 0 ? _l : null
+                                    : (typeof ((_o = (_m = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.data) === null || _m === void 0 ? void 0 : _m.series) === null || _o === void 0 ? void 0 : _o.monitored) === 'boolean'
+                                        ? parseResponse.data.series.monitored
+                                        : null),
                             });
                         },
                     };
                 args.jobLog("Checking for tag '".concat(tagName, "' in ").concat(arrApp.name, "..."));
-                return [4 /*yield*/, getId(args, arrApp, originalFileName)];
+                if (monitoredCheck !== "Don't Check") {
+                    args.jobLog("Monitored option selected: '".concat(monitoredCheck, "'"));
+                }
+                forceParseLookup = monitoredCheck !== "Don't Check";
+                return [4 /*yield*/, getId(args, arrApp, originalFileName, forceParseLookup)];
             case 1:
                 result = _e.sent();
                 if (!(result.id === -1 && currentFileName !== originalFileName)) return [3 /*break*/, 3];
-                return [4 /*yield*/, getId(args, arrApp, currentFileName)];
+                return [4 /*yield*/, getId(args, arrApp, currentFileName, forceParseLookup)];
             case 2:
                 result = _e.sent();
                 _e.label = 3;
@@ -278,11 +306,25 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 8:
                 args.jobLog("".concat(arrApp.content, " not found in ").concat(arrApp.name));
                 _e.label = 9;
-            case 9: return [2 /*return*/, {
-                    outputFileObj: args.inputFileObj,
-                    outputNumber: tagFound ? 1 : 2,
-                    variables: args.variables,
-                }];
+            case 9:
+                monitoredCheckPassed = true;
+                if (monitoredCheck === 'Check Monitored') {
+                    monitoredCheckPassed = result.monitored === true;
+                    args.jobLog(monitoredCheckPassed
+                        ? 'Monitored check passed (item is monitored)'
+                        : "Monitored check failed (".concat(result.monitored === false ? 'item is unmonitored' : 'monitored state unavailable', ")"));
+                }
+                else if (monitoredCheck === 'Check Unmonitored') {
+                    monitoredCheckPassed = result.monitored === false;
+                    args.jobLog(monitoredCheckPassed
+                        ? 'Unmonitored check passed (item is unmonitored)'
+                        : "Unmonitored check failed (".concat(result.monitored === true ? 'item is monitored' : 'monitored state unavailable', ")"));
+                }
+                return [2 /*return*/, {
+                        outputFileObj: args.inputFileObj,
+                        outputNumber: tagFound && monitoredCheckPassed ? 1 : 2,
+                        variables: args.variables,
+                    }];
         }
     });
 }); };

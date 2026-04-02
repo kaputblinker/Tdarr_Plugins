@@ -274,7 +274,7 @@ describe('checkRadarrOrSonarrTag Plugin', () => {
 
     expect(result.outputNumber).toBe(2);
     expect(mockJobLog).toHaveBeenCalledWith(
-      expect.stringContaining("does not exist in radarr"),
+      expect.stringContaining('does not exist in radarr'),
     );
   });
 
