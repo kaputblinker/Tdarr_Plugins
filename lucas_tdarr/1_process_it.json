@@ -62,8 +62,8 @@
       "version": "1.0.0",
       "id": "NoKaBJzDr",
       "position": {
-        "x": 804,
-        "y": -168
+        "x": 828,
+        "y": -264
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -78,8 +78,8 @@
       "version": "1.0.0",
       "id": "iflVu1_qZ",
       "position": {
-        "x": 804,
-        "y": -120
+        "x": 828,
+        "y": -216
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -307,8 +307,8 @@
       "version": "1.0.0",
       "id": "nSQtSP37o",
       "position": {
-        "x": 996,
-        "y": -36
+        "x": 1020,
+        "y": -144
       },
       "fpEnabled": true
     },
@@ -373,8 +373,8 @@
       "version": "1.0.0",
       "id": "oLRSeQhuk",
       "position": {
-        "x": 816,
-        "y": -36
+        "x": 732,
+        "y": -60
       },
       "fpEnabled": true
     },
@@ -437,6 +437,33 @@
         "y": 72
       },
       "fpEnabled": true
+    },
+    {
+      "name": "MKVPropEdit is great for guaranteeing the following \"Video Bitrate is good enough?\" check won't fail.\nMediaInfo always works to calculate bitrates but tdarr doesn't let you use that with the Check Video Bitrate plugin. So you need to A) use mediainfo and exiftool to emulate what MKVPropEdit does, or B) replace the bitrate check plugin with a custom or edited version.\nIDK How often mp4 and avi are missing bitrate metadata so I choose to ignore this problem until it becomes a problem. Then I'll probably choose B so I can remove this MKVPropEdit call entirely.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "ZNv-hHS1H",
+      "position": {
+        "x": 1020,
+        "y": -108
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Is .mkv?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFileExtension",
+      "version": "1.0.0",
+      "id": "3zMe3C6_2",
+      "position": {
+        "x": 828,
+        "y": -132
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "extensions": "mkv"
+      }
     }
   ],
   "flowEdges": [
@@ -553,13 +580,6 @@
       "id": "EQ02-wk0E"
     },
     {
-      "source": "iflVu1_qZ",
-      "sourceHandle": "1",
-      "target": "oLRSeQhuk",
-      "targetHandle": null,
-      "id": "sRjfu0JVm"
-    },
-    {
       "source": "oLRSeQhuk",
       "sourceHandle": "1",
       "target": "2TFpei23_",
@@ -670,6 +690,27 @@
       "target": "KR6kUsoPS",
       "targetHandle": null,
       "id": "OaYyqtdrS"
+    },
+    {
+      "source": "iflVu1_qZ",
+      "sourceHandle": "1",
+      "target": "3zMe3C6_2",
+      "targetHandle": null,
+      "id": "AZDqQGmqk"
+    },
+    {
+      "source": "3zMe3C6_2",
+      "sourceHandle": "1",
+      "target": "oLRSeQhuk",
+      "targetHandle": null,
+      "id": "VHhj2hbc2"
+    },
+    {
+      "source": "3zMe3C6_2",
+      "sourceHandle": "2",
+      "target": "2TFpei23_",
+      "targetHandle": null,
+      "id": "bQq0CMHOM"
     }
   ]
 }
