@@ -5,7 +5,22 @@
   "tags": "",
   "flowPlugins": [
     {
-      "name": "Trying to transcode these low-bitrate crummy codecs will kinda just make things worse",
+      "name": "(try again) Video Bitrate is good enough?",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoBitrate",
+      "version": "1.0.0",
+      "id": "5MS73YMSd",
+      "position": {
+        "x": 948,
+        "y": 144
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "lessThan": "{{args.variables.videoTranscodeThresholdKps}}"
+      }
+    },
+    {
+      "name": "Trying to transcode these crummy codecs at such a low bitrate will kinda just make things worse",
       "sourceRepo": "Community",
       "pluginName": "comment",
       "version": "1.0.0",
@@ -17,18 +32,6 @@
       "fpEnabled": true
     },
     {
-      "name": "Run MKVPropEdit",
-      "sourceRepo": "Community",
-      "pluginName": "runMkvPropEdit",
-      "version": "1.0.0",
-      "id": "-aWUXpqLK",
-      "position": {
-        "x": 720,
-        "y": 1404
-      },
-      "fpEnabled": true
-    },
-    {
       "name": "Video Bitrate is GARBAGE oh my god\nThis bucket includes e.g. AV1 which is *good* but should still be transcoded for compatibility",
       "sourceRepo": "Community",
       "pluginName": "comment",
@@ -36,7 +39,7 @@
       "id": "vMYvmGCY5",
       "position": {
         "x": 972,
-        "y": 396
+        "y": 420
       },
       "fpEnabled": true
     },
@@ -62,8 +65,8 @@
       "version": "1.0.0",
       "id": "NoKaBJzDr",
       "position": {
-        "x": 804,
-        "y": -168
+        "x": 828,
+        "y": -264
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -78,8 +81,8 @@
       "version": "1.0.0",
       "id": "iflVu1_qZ",
       "position": {
-        "x": 804,
-        "y": -120
+        "x": 828,
+        "y": -216
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -93,8 +96,8 @@
       "version": "1.0.0",
       "id": "2TFpei23_",
       "position": {
-        "x": 816,
-        "y": 12
+        "x": 828,
+        "y": -132
       },
       "fpEnabled": true
     },
@@ -106,7 +109,7 @@
       "id": "KCwPheVCa",
       "position": {
         "x": 972,
-        "y": 504
+        "y": 528
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -151,7 +154,7 @@
       "id": "L_aAnU7WV",
       "position": {
         "x": 972,
-        "y": 552
+        "y": 576
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -194,7 +197,7 @@
       "id": "zvoQPuqbD",
       "position": {
         "x": 696,
-        "y": 228
+        "y": 240
       },
       "fpEnabled": true
     },
@@ -205,8 +208,8 @@
       "version": "1.0.0",
       "id": "KR6kUsoPS",
       "position": {
-        "x": 816,
-        "y": 144
+        "x": 828,
+        "y": -12
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -296,7 +299,7 @@
       "id": "gI_opj7Eu",
       "position": {
         "x": 972,
-        "y": 624
+        "y": 636
       },
       "fpEnabled": true
     },
@@ -308,7 +311,7 @@
       "id": "nSQtSP37o",
       "position": {
         "x": 996,
-        "y": -36
+        "y": -132
       },
       "fpEnabled": true
     },
@@ -335,7 +338,7 @@
       "id": "Z4cNMRrxX",
       "position": {
         "x": 624,
-        "y": 408
+        "y": 420
       },
       "fpEnabled": true
     },
@@ -373,8 +376,8 @@
       "version": "1.0.0",
       "id": "oLRSeQhuk",
       "position": {
-        "x": 816,
-        "y": -36
+        "x": 948,
+        "y": 108
       },
       "fpEnabled": true
     },
@@ -402,7 +405,7 @@
       "id": "sGGDydPG2",
       "position": {
         "x": 816,
-        "y": 300
+        "y": 312
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -433,10 +436,64 @@
       "version": "1.0.0",
       "id": "kV2B30z_y",
       "position": {
-        "x": 816,
-        "y": 72
+        "x": 828,
+        "y": -84
       },
       "fpEnabled": true
+    },
+    {
+      "name": "MKVPropEdit is great for guaranteeing the following \"Video Bitrate is good enough?\" check won't fail.\nMediaInfo always works to calculate bitrates but tdarr doesn't let you use that with the Check Video Bitrate plugin. So you need to A) use mediainfo and exiftool to emulate what MKVPropEdit does, or B) replace the bitrate check plugin with a custom or edited version.\nIDK How often mp4 and avi are missing bitrate metadata so I choose to ignore this problem until it becomes a problem. Then I'll probably choose B so I can remove this MKVPropEdit call entirely.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "ZNv-hHS1H",
+      "position": {
+        "x": 1284,
+        "y": 96
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Is .mkv?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFileExtension",
+      "version": "1.0.0",
+      "id": "3zMe3C6_2",
+      "position": {
+        "x": 972,
+        "y": 36
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "extensions": "mkv"
+      }
+    },
+    {
+      "name": "JUST DO IT",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "1jl4_DtLY",
+      "position": {
+        "x": 1116,
+        "y": 156
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Haha you have to fix this now",
+      "sourceRepo": "Community",
+      "pluginName": "apprise",
+      "version": "1.0.0",
+      "id": "GFmTldxWM",
+      "position": {
+        "x": 1116,
+        "y": 108
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "command": "-vv -t \"It actually happened? We couldn't find the video bitrate for a non-mkv file?\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nI left a super long comment in the flow about how I was going to ignore this until it became a problem. Congrats, it's a problem!\nFor now I'm just going to transcode it anyway. If it's a little shitter h264/mpeg4, this will make things worse :)))\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+      }
     }
   ],
   "flowEdges": [
@@ -553,34 +610,6 @@
       "id": "EQ02-wk0E"
     },
     {
-      "source": "iflVu1_qZ",
-      "sourceHandle": "1",
-      "target": "oLRSeQhuk",
-      "targetHandle": null,
-      "id": "sRjfu0JVm"
-    },
-    {
-      "source": "oLRSeQhuk",
-      "sourceHandle": "1",
-      "target": "2TFpei23_",
-      "targetHandle": null,
-      "id": "Mk9kfwqeh"
-    },
-    {
-      "source": "_MYz-VHko",
-      "sourceHandle": "1",
-      "target": "-aWUXpqLK",
-      "targetHandle": null,
-      "id": "SLxeAhU8m"
-    },
-    {
-      "source": "-aWUXpqLK",
-      "sourceHandle": "1",
-      "target": "tGHiaWqaX",
-      "targetHandle": null,
-      "id": "bYbwchdkE"
-    },
-    {
       "source": "KTJWm501L",
       "sourceHandle": "1",
       "target": "e_CSZogKq",
@@ -670,6 +699,76 @@
       "target": "KR6kUsoPS",
       "targetHandle": null,
       "id": "OaYyqtdrS"
+    },
+    {
+      "source": "3zMe3C6_2",
+      "sourceHandle": "1",
+      "target": "oLRSeQhuk",
+      "targetHandle": null,
+      "id": "VHhj2hbc2"
+    },
+    {
+      "source": "iflVu1_qZ",
+      "sourceHandle": "1",
+      "target": "2TFpei23_",
+      "targetHandle": null,
+      "id": "9sr3B6OXg"
+    },
+    {
+      "source": "KR6kUsoPS",
+      "sourceHandle": "err1",
+      "target": "3zMe3C6_2",
+      "targetHandle": null,
+      "id": "496zoP4Pm"
+    },
+    {
+      "source": "oLRSeQhuk",
+      "sourceHandle": "1",
+      "target": "5MS73YMSd",
+      "targetHandle": null,
+      "id": "jBbv30Fu4"
+    },
+    {
+      "source": "5MS73YMSd",
+      "sourceHandle": "1",
+      "target": "zvoQPuqbD",
+      "targetHandle": null,
+      "id": "d2LwTJnfM"
+    },
+    {
+      "source": "5MS73YMSd",
+      "sourceHandle": "2",
+      "target": "vMYvmGCY5",
+      "targetHandle": null,
+      "id": "N8gjy8RVJ"
+    },
+    {
+      "source": "3zMe3C6_2",
+      "sourceHandle": "2",
+      "target": "GFmTldxWM",
+      "targetHandle": null,
+      "id": "DTwwpVUEl"
+    },
+    {
+      "source": "GFmTldxWM",
+      "sourceHandle": "1",
+      "target": "1jl4_DtLY",
+      "targetHandle": null,
+      "id": "FyGtk_fT5"
+    },
+    {
+      "source": "1jl4_DtLY",
+      "sourceHandle": "1",
+      "target": "vMYvmGCY5",
+      "targetHandle": null,
+      "id": "8ImdDvVDs"
+    },
+    {
+      "source": "_MYz-VHko",
+      "sourceHandle": "1",
+      "target": "tGHiaWqaX",
+      "targetHandle": null,
+      "id": "U_b-aQszr"
     }
   ]
 }
