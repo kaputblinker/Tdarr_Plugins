@@ -129,6 +129,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 arrInfo.originalPath = res.data.movieFile.path ? res.data.movieFile.path : args.originalLibraryFile._id;
                 arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
                 arrInfo.sceneName = res.data.movieFile.sceneName;
+                arrInfo.data = res.data;
                 args.deps.fsextra.writeJsonSync("".concat(args.workDir, "/arr.json"), arrInfo);
                 return [3 /*break*/, 5];
             case 4:
@@ -163,6 +164,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 arrInfo.originalPath = res.data.episodeFile.path ? res.data.episodeFile.path : args.originalLibraryFile._id;
                 arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
                 arrInfo.sceneName = res.data.episodeFile.sceneName;
+                arrInfo.data = res.data;
                 args.deps.fsextra.writeJsonSync("".concat(args.workDir, "/arr.json"), arrInfo);
                 return [3 /*break*/, 11];
             case 10:

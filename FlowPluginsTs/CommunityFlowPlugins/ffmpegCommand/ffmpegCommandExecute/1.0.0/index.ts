@@ -35,7 +35,7 @@ const getOuputStreamIndex = (streams: IffmpegCommandStream[], stream: IffmpegCom
   let index = -1;
 
   for (let idx = 0; idx < streams.length; idx += 1) {
-    if (!stream.removed) {
+    if (!stream.removed && !stream.extraExportArgs) {
       index += 1;
     }
 
@@ -51,7 +51,7 @@ const getOuputStreamTypeIndex = (streams: IffmpegCommandStream[], stream: Iffmpe
   let index = -1;
 
   for (let idx = 0; idx < streams.length; idx += 1) {
-    if (!stream.removed && streams[idx].codec_type === stream.codec_type) {
+    if (!stream.removed && !stream.extraExportArgs && streams[idx].codec_type === stream.codec_type) {
       index += 1;
     }
 
@@ -116,6 +116,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       return arg;
     });
 
+    if (stream.extraExport) {
+      continue;
+    }
+
     cliArgs.push(...stream.mapArgs);
 
     if (stream.outputArgs.length === 0) {
@@ -145,9 +149,24 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   }
 
   const outputFilePath = `${getPluginWorkDir(args)}/${getFileName(args.inputFileObj._id)}`
-  + `.${args.variables.ffmpegCommand.container}`;
+    + `.${args.variables.ffmpegCommand.container}`;
 
   cliArgs.push(outputFilePath);
+
+  for (let i = 0; i < streams.length; i += 1) {
+    const stream = streams[i];
+    if (stream.extraExport) {
+      cliArgs.push(...stream.mapArgs);
+
+      if (stream.outputArgs.length === 0) {
+        cliArgs.push(`-c:${getOuputStreamIndex(streams, stream)}`, 'copy');
+      } else {
+        cliArgs.push(...stream.outputArgs);
+      }
+
+      inputArgs.push(...stream.inputArgs);
+    }
+  }
 
   const spawnArgs = cliArgs.map((row) => row.trim()).filter((row) => row !== '');
 

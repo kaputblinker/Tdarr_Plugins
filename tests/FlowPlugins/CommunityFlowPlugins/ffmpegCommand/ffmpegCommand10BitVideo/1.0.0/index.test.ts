@@ -143,9 +143,9 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
 
       // Platform-specific behavior - either -vf scale_qsv or -pix_fmt should be present
       const hasScaleQsv = videoStream?.outputArgs.includes('-vf')
-                          && videoStream?.outputArgs.includes('scale_qsv=format=p010le');
+        && videoStream?.outputArgs.includes('scale_qsv=format=p010le');
       const hasPixFmt = videoStream?.outputArgs.includes('-pix_fmt:v:{outputTypeIndex}')
-                        && videoStream?.outputArgs.includes('p010le');
+        && videoStream?.outputArgs.includes('p010le');
 
       expect(hasScaleQsv || hasPixFmt).toBe(true);
     });

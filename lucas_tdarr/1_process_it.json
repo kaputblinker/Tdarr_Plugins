@@ -1,0 +1,678 @@
+{
+  "_id": "P_38Tbyi9",
+  "name": "1: Process it",
+  "description": "1: Process it",
+  "tags": "",
+  "flowPlugins": [
+    {
+      "name": "Trying to transcode these low-bitrate crummy codecs will kinda just make things worse",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "bRVUz1e1A",
+      "position": {
+        "x": 792,
+        "y": 408
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Run MKVPropEdit",
+      "sourceRepo": "Community",
+      "pluginName": "runMkvPropEdit",
+      "version": "1.0.0",
+      "id": "-aWUXpqLK",
+      "position": {
+        "x": 720,
+        "y": 1404
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Video Bitrate is GARBAGE oh my god\nThis bucket includes e.g. AV1 which is *good* but should still be transcoded for compatibility",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "vMYvmGCY5",
+      "position": {
+        "x": 972,
+        "y": 396
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Encode Primary Language with Opus + Add Normalized Track",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandCustomArguments",
+      "version": "1.0.0",
+      "id": "hbRF18OA0",
+      "position": {
+        "x": 720,
+        "y": 852
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "outputArguments": "-filter_complex [0:{{args.variables.primary_audio_index}}]asplit=2[main_in][stereo_in];[main_in]aformat=channel_layouts=5.1,aresample=48000[main];[stereo_in]pan=stereo|c0=FL+0.7*FC+0.7*BL|c1=FR+0.7*FC+0.7*BR,loudnorm=I=-23:LRA=11:tp=-2,aresample=48000[stereo_out] -map [main] -c:a:0 libopus -b:a:0 256k -map [stereo_out] -c:a:1 libopus -b:a:1 64k -metadata:s:a:0 language={{args.variables.primary_audio_lang}} -metadata:s:a:0 title=Original_Audio_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}} -metadata:s:a:1 title=Stereo_Normalized_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}}"
+      }
+    },
+    {
+      "name": "Input File",
+      "sourceRepo": "Community",
+      "pluginName": "inputFile",
+      "version": "1.0.0",
+      "id": "NoKaBJzDr",
+      "position": {
+        "x": 804,
+        "y": -168
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileAccessChecks": "true",
+        "pauseNodeIfAccessChecksFail": "true"
+      }
+    },
+    {
+      "name": "Get original language and choose audio streams",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "iflVu1_qZ",
+      "position": {
+        "x": 804,
+        "y": -120
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "\nmodule.exports = async (args) => {\n\n  TMDB_API_KEY = \"620bf84bb7e392f5ef6e7bd48142a9e3\";\n  audio_channel_precedence = [6, 8, 2, 1];\n  audio_stream_precedence = [\"truehd\", \"flac\", \"dts\", \"eac3\", \"ac3\",  \"alac\", \"wav\", \"pcm\"];\n  desired_languages = [\"eng\"];\n\n\n  // see args object data here https://github.com/HaveAGitGat/Tdarr_Plugins/blob/master/FlowPluginsTs/FlowHelpers/1.0.0/interfaces/interfaces.ts\n  // example setting flow variable: https://github.com/HaveAGitGat/Tdarr/issues/1147#issuecomment-2593348443\n  // example reading ffmpeg metadata: https://github.com/HaveAGitGat/Tdarr_Plugins/issues/737#issuecomment-2581536112\n  // example setting working file as previous working file: https://github.com/HaveAGitGat/Tdarr/issues/1106#issuecomment-2622177459\n\n  // some example file data:\n  // console.log(args.inputFileObj._id)\n  // console.log(args.inputFileObj.file_size)\n  // console.log(args.inputFileObj.ffProbeData.streams[0].codec_name)\n  // console.log(args.inputFileObj.mediaInfo.track[0].BitRate)\n\n\n  const data = args.deps.fsextra.readJsonSync(\"\".concat(args.workDir, \"/arr.json\"), { throws: false })?.data;\n  // console.log(\"Arr:\" + JSON.stringify(data));\n  var imdbId = data && data.imdbId\n    ? data.imdbId\n    : (data && data.series && data.series.imdbId\n      ? data.series.imdbId\n      : (data && data.episodes && data.episodes[0] && data.episodes[0].imdbId\n        ? data.episodes[0].imdbId\n        : null));\n\n  var tmdbData = null;\n  var orlang = null;\n\n  function getFirstOriginalLanguage(label, list) {\n    if (!Array.isArray(list)) {\n      console.log(label + \": not an array\");\n      return null;\n    }\n\n    console.log(label + \": \" + list.length + \" item(s)\");\n    for (var i = 0; i < list.length; i++) {\n      var item = list[i];\n      console.log(label + \"[\" + i + \"] = \" + JSON.stringify(item));\n\n      if (item && item.original_language) {\n        console.log(label + \"[\" + i + \"] original_language = \" + item.original_language);\n        return item.original_language;\n      }\n    }\n\n    return null;\n  }\n\n  if (imdbId) {\n    var tmdbUrl =\n      \"https://api.themoviedb.org/3/find/\" +\n      encodeURIComponent(imdbId) +\n      \"?api_key=\" +\n      TMDB_API_KEY +\n      \"&language=en-US&external_source=imdb_id\";\n\n    args.jobLog(\"IMDB ID: \" + imdbId);\n    args.jobLog(\"TMDB URL: \" + tmdbUrl);\n\n    try {\n      var tmdbResponse = await args.deps.axios.get(tmdbUrl);\n      tmdbData = tmdbResponse && tmdbResponse.data ? tmdbResponse.data : null;\n\n      args.jobLog(\"TMDB response keys: \" + (tmdbData ? Object.keys(tmdbData).join(\", \") : \"none\"));\n      args.jobLog(\"TMDB raw response: \" + JSON.stringify(tmdbData));\n    } catch (err) {\n      args.jobLog(\"TMDB lookup failed: \" + (err && err.message ? err.message : String(err)));\n    }\n  } else {\n    args.jobLog(\"No IMDB ID found in arr.json\");\n  }\n\n  if (tmdbData) {\n    orlang = getFirstOriginalLanguage(\"movie_results\", tmdbData.movie_results);\n\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_results\", tmdbData.tv_results);\n    }\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_episode_results\", tmdbData.tv_episode_results);\n    }\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_series_results\", tmdbData.tv_series_results);\n    }\n  }\n\n  console.log(\"Resolved original language: \" + orlang);\n\n\n  alpha2ToAlpha3B = { \"aa\": \"aar\", \"ab\": \"abk\", \"ae\": \"ave\", \"af\": \"afr\", \"ak\": \"aka\", \"am\": \"amh\", \"an\": \"arg\", \"ar\": \"ara\", \"as\": \"asm\", \"av\": \"ava\", \"ay\": \"aym\", \"az\": \"aze\", \"ba\": \"bak\", \"be\": \"bel\", \"bg\": \"bul\", \"bh\": \"bih\", \"bi\": \"bis\", \"bm\": \"bam\", \"bn\": \"ben\", \"bo\": \"tib\", \"br\": \"bre\", \"bs\": \"bos\", \"ca\": \"cat\", \"ce\": \"che\", \"ch\": \"cha\", \"co\": \"cos\", \"cr\": \"cre\", \"cs\": \"cze\", \"cu\": \"chu\", \"cv\": \"chv\", \"cy\": \"wel\", \"da\": \"dan\", \"de\": \"ger\", \"dv\": \"div\", \"dz\": \"dzo\", \"ee\": \"ewe\", \"el\": \"gre\", \"en\": \"eng\", \"eo\": \"epo\", \"es\": \"spa\", \"et\": \"est\", \"eu\": \"baq\", \"fa\": \"per\", \"ff\": \"ful\", \"fi\": \"fin\", \"fj\": \"fij\", \"fo\": \"fao\", \"fr\": \"fre\", \"fy\": \"fry\", \"ga\": \"gle\", \"gd\": \"gla\", \"gl\": \"glg\", \"gn\": \"grn\", \"gu\": \"guj\", \"gv\": \"glv\", \"ha\": \"hau\", \"he\": \"heb\", \"hi\": \"hin\", \"ho\": \"hmo\", \"hr\": \"hrv\", \"ht\": \"hat\", \"hu\": \"hun\", \"hy\": \"arm\", \"hz\": \"her\", \"ia\": \"ina\", \"id\": \"ind\", \"ie\": \"ile\", \"ig\": \"ibo\", \"ii\": \"iii\", \"ik\": \"ipk\", \"io\": \"ido\", \"is\": \"ice\", \"it\": \"ita\", \"iu\": \"iku\", \"ja\": \"jpn\", \"jv\": \"jav\", \"ka\": \"geo\", \"kg\": \"kon\", \"ki\": \"kik\", \"kj\": \"kua\", \"kk\": \"kaz\", \"kl\": \"kal\", \"km\": \"khm\", \"kn\": \"kan\", \"ko\": \"kor\", \"kr\": \"kau\", \"ks\": \"kas\", \"ku\": \"kur\", \"kv\": \"kom\", \"kw\": \"cor\", \"ky\": \"kir\", \"la\": \"lat\", \"lb\": \"ltz\", \"lg\": \"lug\", \"li\": \"lim\", \"ln\": \"lin\", \"lo\": \"lao\", \"lt\": \"lit\", \"lu\": \"lub\", \"lv\": \"lav\", \"mg\": \"mlg\", \"mh\": \"mah\", \"mi\": \"mao\", \"mk\": \"mac\", \"ml\": \"mal\", \"mn\": \"mon\", \"mr\": \"mar\", \"ms\": \"may\", \"mt\": \"mlt\", \"my\": \"bur\", \"na\": \"nau\", \"nb\": \"nob\", \"nd\": \"nde\", \"ne\": \"nep\", \"ng\": \"ndo\", \"nl\": \"dut\", \"nn\": \"nno\", \"no\": \"nor\", \"nr\": \"nbl\", \"nv\": \"nav\", \"ny\": \"nya\", \"oc\": \"oci\", \"oj\": \"oji\", \"om\": \"orm\", \"or\": \"ori\", \"os\": \"oss\", \"pa\": \"pan\", \"pi\": \"pli\", \"pl\": \"pol\", \"ps\": \"pus\", \"pt\": \"por\", \"qu\": \"que\", \"rm\": \"roh\", \"rn\": \"run\", \"ro\": \"rum\", \"ru\": \"rus\", \"rw\": \"kin\", \"sa\": \"san\", \"sc\": \"srd\", \"sd\": \"snd\", \"se\": \"sme\", \"sg\": \"sag\", \"si\": \"sin\", \"sk\": \"slo\", \"sl\": \"slv\", \"sm\": \"smo\", \"sn\": \"sna\", \"so\": \"som\", \"sq\": \"alb\", \"sr\": \"srp\", \"ss\": \"ssw\", \"st\": \"sot\", \"su\": \"sun\", \"sv\": \"swe\", \"sw\": \"swa\", \"ta\": \"tam\", \"te\": \"tel\", \"tg\": \"tgk\", \"th\": \"tha\", \"ti\": \"tir\", \"tk\": \"tuk\", \"tl\": \"tgl\", \"tn\": \"tsn\", \"to\": \"ton\", \"tr\": \"tur\", \"ts\": \"tso\", \"tt\": \"tat\", \"tw\": \"twi\", \"ty\": \"tah\", \"ug\": \"uig\", \"uk\": \"ukr\", \"ur\": \"urd\", \"uz\": \"uzb\", \"ve\": \"ven\", \"vi\": \"vie\", \"vo\": \"vol\", \"wa\": \"wln\", \"wo\": \"wol\", \"xh\": \"xho\", \"yi\": \"yid\", \"yo\": \"yor\", \"za\": \"zha\", \"zh\": \"chi\", \"zu\": \"zul\" };\n  args.variables.original_language = null;\n  if (orlang !== null && alpha2ToAlpha3B[orlang]) {\n    args.variables.original_language = alpha2ToAlpha3B[orlang];\n  }\n\n  console.log(\"Original Language: \" + args.variables.original_language);\n\n  if (args.variables.original_language && !desired_languages.includes(args.variables.original_language)) {\n    desired_languages.push(args.variables.original_language);\n  }\n  const selected_audio_indices = [];\n  const selected_audio_langs = [];\n  const bestByLanguage = {};\n  const allLanguages = [];\n\n  args.inputFileObj.ffProbeData.streams.forEach((stream, index) => {\n    if (stream.codec_type !== \"audio\") return;\n\n    const language = (stream.tags?.language || \"und\").toLowerCase();\n    allLanguages.push([index, language]);\n    if (!desired_languages.includes(language)) return;\n\n\n    const codecName = (stream.codec_name || \"\").toLowerCase();\n    let codecRank = audio_stream_precedence.findIndex((c) => codecName.includes(c));\n    if (codecRank === -1) codecRank = Number.MAX_SAFE_INTEGER;\n\n    let channelRank = audio_channel_precedence.indexOf(stream.channels);\n    if (channelRank === -1) channelRank = Number.MAX_SAFE_INTEGER;\n\n    const currentBest = bestByLanguage[language];\n    const candidate = { index, codecRank, channelRank, channels: stream.channels || 0 };\n\n    if (\n      !currentBest ||\n      candidate.channels > currentBest.channels ||\n      (candidate.channels === currentBest.channels &&\n        candidate.codecRank < currentBest.codecRank)\n    ) {\n      bestByLanguage[language] = candidate;\n    }\n  });\n\n  desired_languages.forEach((language) => {\n    if (bestByLanguage[language]) {\n      selected_audio_indices.push(bestByLanguage[language].index);\n      selected_audio_langs.push(language);\n    }\n  });\n\n  if (selected_audio_indices.length == 0) {\n    args.jobLog(\"Could not find any desired languages! Using the first audio track instead.\")\n    const [index, language] = allLanguages[0];\n    selected_audio_indices.push(index);\n    selected_audio_langs.push(language)\n  }\n\n  args.variables.selected_audio_indices = selected_audio_indices;\n  args.variables.selected_audio_langs = selected_audio_langs;\n  args.jobLog(\"Selected audio indices:\" + selected_audio_indices + \"(languages \" + selected_audio_langs + \")\");\n  args.variables.primary_audio_index = selected_audio_indices[0];\n  args.variables.primary_audio_lang = selected_audio_langs[0];\n\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: args.variables.original_language ? 1 : 4,\n    variables: args.variables,\n  };\n}\n"
+      }
+    },
+    {
+      "name": "Begin Command",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandStart",
+      "version": "1.0.0",
+      "id": "2TFpei23_",
+      "position": {
+        "x": 804,
+        "y": 12
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Crop Black Bars",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandCropBlackBars",
+      "version": "1.0.0",
+      "id": "KCwPheVCa",
+      "position": {
+        "x": 972,
+        "y": 504
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "sampleCount": "10"
+      }
+    },
+    {
+      "name": "Encode Additional Audio with Opus",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandCustomArguments",
+      "version": "1.0.0",
+      "id": "pF85TkNiZ",
+      "position": {
+        "x": 948,
+        "y": 960
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "outputArguments": "-map 0:{{args.variables.audio_curr_ind}} -c:a:{{args.variables.audio_metadata_ind}} libopus -b:a:{{args.variables.audio_metadata_ind}} {{args.variables.audio_curr_bitrate}} -metadata:s:a:{{args.variables.audio_metadata_ind}} language={{args.variables.audio_curr_lang}} -metadata:s:a:{{args.variables.audio_metadata_ind}} title=Stereo_{{args.variables.audio_curr_lang}}"
+      }
+    },
+    {
+      "name": "For Each Additional Audio Stream",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "DHaOF-g6T",
+      "position": {
+        "x": 720,
+        "y": 948
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "\nmodule.exports = async (args) => {\n\n// see args object data here https://github.com/HaveAGitGat/Tdarr_Plugins/blob/master/FlowPluginsTs/FlowHelpers/1.0.0/interfaces/interfaces.ts\n// example setting flow variable: https://github.com/HaveAGitGat/Tdarr/issues/1147#issuecomment-2593348443\n// example reading ffmpeg metadata: https://github.com/HaveAGitGat/Tdarr_Plugins/issues/737#issuecomment-2581536112\n// example setting working file as previous working file: https://github.com/HaveAGitGat/Tdarr/issues/1106#issuecomment-2622177459\n\n// some example file data:\ndone = false;\nif (args.variables.audio_loop_ind === undefined){\n  args.variables.audio_loop_ind = 1;\n}else{\n  args.variables.audio_loop_ind = args.variables.audio_loop_ind + 1;\n}\n\n\nargs.jobLog(\"Audio loop ind: \" +args.variables.audio_loop_ind +\" (out of \" +args.variables.selected_audio_indices.length+ \" selected inds)\");\nif(args.variables.audio_loop_ind >= args.variables.selected_audio_indices.length){ \n  done = true;\n  args.jobLog(\"Audio loop Done!\");\n}else{\n    args.variables.audio_curr_ind = args.variables.selected_audio_indices[args.variables.audio_loop_ind];\n    args.variables.audio_curr_lang = args.variables.selected_audio_langs[args.variables.audio_loop_ind];\n    console.log(\"Tracks: \" + args.originalLibraryFile.mediaInfo.track + \". Looking up ind \" + args.variables.audio_curr_ind);\n    nchannels = args.originalLibraryFile.ffProbeData.streams[args.variables.audio_curr_ind].channels;\n    args.variables.audio_curr_bitrate = nchannels*48 + \"k\";\nargs.variables.audio_metadata_ind = args.variables.audio_loop_ind + 1;\nargs.jobLog(\"Current Audio loop index: \"+ args.variables.audio_loop_ind +\" (out of \"+args.variables.selected_audio_indices.length+ \". This corresponds to absolute audio stream \"+ args.variables.audio_curr_ind+ \")\")\n}\n\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: done ? 2 : 1,\n    variables: args.variables,\n  };\n}\n      "
+      }
+    },
+    {
+      "name": "Encode CPU x265 with CRF 22",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandSetVideoEncoder",
+      "version": "1.0.0",
+      "id": "L_aAnU7WV",
+      "position": {
+        "x": 972,
+        "y": 552
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "hardwareEncoding": "false",
+        "ffmpegQuality": "22"
+      }
+    },
+    {
+      "name": "Lookup max bitrate based on resolution",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "hmj3u8LPE",
+      "position": {
+        "x": 804,
+        "y": 72
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "module.exports = async (args) => {\n    // Use the caller-provided normalized resolution label directly.\n    const resolutionLabel = String(args.inputFileObj?.video_resolution || '').trim();\n\n    if (!resolutionLabel) {\n        throw new Error('Missing args.inputFileObj.video_resolution');\n    }\n\n    const bitrateLookupKbps = {\n        '480p': 900,\n        '576p': 1200,\n        '720p': 2400,\n        '1080p': 4000,\n        '1440p': 6000,\n        '4KUHD': 8000,\n        'DCI4K': 10000,\n        '8KUHD': 12500\n    };\n\n    const targetBitrateKbps = bitrateLookupKbps[resolutionLabel];\n\n    if (!targetBitrateKbps) {\n        const valid = Object.keys(bitrateLookupKbps).join(', ');\n        throw new Error(\n            'Unsupported video_resolution \"' +\n            resolutionLabel +\n            '\". Expected one of: ' +\n            valid\n        );\n    }\n    \n    // Set flow variables for downstream steps.\n    args.variables = args.variables || {};\n    args.variables.targetBitrateKbps = targetBitrateKbps;\n    args.variables.videoTranscodeThresholdKps = targetBitrateKbps * 1.5;\n    args.variables.maxBitrate4x = String(targetBitrateKbps * 4) + 'k';\n    args.variables.maxBitrate8x = String(targetBitrateKbps * 8) + 'k';\n\n    args.jobLog(\n        'lookupMaxBitrate: resolution=' +\n        resolutionLabel +\n        ', target=' +\n        targetBitrateKbps +\n        'k, threshold=' +\n        args.variables.videoTranscodeThresholdKps +\n        'k, max4x=' +\n        args.variables.maxBitrate4x +\n        'k, max8x=' +\n        args.variables.maxBitrate8x +\n        'k'\n    );\n\n    return {\n        outputFileObj: args.inputFileObj,\n        outputNumber: 1,\n        variables: args.variables\n    };\n};"
+      }
+    },
+    {
+      "name": "Set max bitrate to 4x \"nominal\" and add faststart",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandCustomArguments",
+      "version": "1.0.0",
+      "id": "IgJ_RMD2A",
+      "position": {
+        "x": 972,
+        "y": 684
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "outputArguments": "-maxrate {{args.variables.maxBitrate4x}} -bufsize {{args.variables.maxBitrate8x}} -movflags +faststart"
+      }
+    },
+    {
+      "name": "Execute",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandExecute",
+      "version": "1.0.0",
+      "id": "_MYz-VHko",
+      "position": {
+        "x": 720,
+        "y": 1344
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Codec is h265?",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoCodec",
+      "version": "1.0.0",
+      "id": "zvoQPuqbD",
+      "position": {
+        "x": 696,
+        "y": 228
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Video Bitrate is good enough?",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoBitrate",
+      "version": "1.0.0",
+      "id": "KR6kUsoPS",
+      "position": {
+        "x": 816,
+        "y": 144
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "lessThan": "{{args.variables.videoTranscodeThresholdKps}}"
+      }
+    },
+    {
+      "name": "Go To Flow: Notify Success",
+      "sourceRepo": "Community",
+      "pluginName": "goToFlow",
+      "version": "2.0.0",
+      "id": "IAt6DFQDN",
+      "position": {
+        "x": 720,
+        "y": 1548
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "flowId": "dDuhVb_7n"
+      }
+    },
+    {
+      "name": "Replace Original File",
+      "sourceRepo": "Community",
+      "pluginName": "replaceOriginalFile",
+      "version": "1.0.0",
+      "id": "tGHiaWqaX",
+      "position": {
+        "x": 720,
+        "y": 1452
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Prevent tdarr from doing it own audio processing. Mine is better",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandRemoveStreamByProperty",
+      "version": "1.0.0",
+      "id": "HzyLQyeTZ",
+      "position": {
+        "x": 720,
+        "y": 768
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "codecType": "audio",
+        "condition": "not_includes",
+        "propertyToCheck": "codec_name",
+        "valuesToRemove": "not_a_real_codec"
+      }
+    },
+    {
+      "name": "Remove Data Streams but More",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandRemoveStreamByProperty",
+      "version": "1.0.0",
+      "id": "KTJWm501L",
+      "position": {
+        "x": 720,
+        "y": 1032
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "codecType": "any",
+        "valuesToRemove": "video,audio,subtitle",
+        "propertyToCheck": "codec_type",
+        "condition": "not_includes"
+      }
+    },
+    {
+      "name": "I guess \"Remove data streams\" doesn't remove streams that are unrecognized by ffmpeg. I would like to get rid of those they are worthless",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "eIClJnWYk",
+      "position": {
+        "x": 552,
+        "y": 1032
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "10 Bit Video",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommand10BitVideo",
+      "version": "1.0.0",
+      "id": "gI_opj7Eu",
+      "position": {
+        "x": 972,
+        "y": 624
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Fail Flow",
+      "sourceRepo": "Community",
+      "pluginName": "failFlow",
+      "version": "1.0.0",
+      "id": "nSQtSP37o",
+      "position": {
+        "x": 996,
+        "y": -36
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Extract Subtitles",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandExtractSubtitles",
+      "version": "1.0.0",
+      "id": "XM-dpycaX",
+      "position": {
+        "x": 720,
+        "y": 1164
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "output_directory": ""
+      }
+    },
+    {
+      "name": "Video Bitrate is good enough, no need to transcode",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "Z4cNMRrxX",
+      "position": {
+        "x": 624,
+        "y": 408
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Set Container",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandSetContainer",
+      "version": "1.0.0",
+      "id": "MWhlAN6Jl",
+      "position": {
+        "x": 720,
+        "y": 1284
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "forceConform": "true"
+      }
+    },
+    {
+      "name": "Reorder Streams",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandRorderStreams",
+      "version": "1.0.0",
+      "id": "xgaVTQKSX",
+      "position": {
+        "x": 720,
+        "y": 1224
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Run MKVPropEdit",
+      "sourceRepo": "Community",
+      "pluginName": "runMkvPropEdit",
+      "version": "1.0.0",
+      "id": "oLRSeQhuk",
+      "position": {
+        "x": 804,
+        "y": -36
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Yeet mjpeg cover streams",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandRemoveStreamByProperty",
+      "version": "1.0.0",
+      "id": "e_CSZogKq",
+      "position": {
+        "x": 720,
+        "y": 1104
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "codecType": "video",
+        "valuesToRemove": "mjpeg"
+      }
+    },
+    {
+      "name": "Is a crummy but well-supported codec? (h264, mpeg4)",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "sGGDydPG2",
+      "position": {
+        "x": 816,
+        "y": 300
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "video",
+        "condition": "includes",
+        "valuesToMatch": "h264,xvid"
+      }
+    },
+    {
+      "name": "Add To Skiplist",
+      "sourceRepo": "Community",
+      "pluginName": "processedAdd",
+      "version": "1.0.0",
+      "id": "fbS-1UaIy",
+      "position": {
+        "x": 720,
+        "y": 1500
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileToAdd": "workingFile"
+      }
+    }
+  ],
+  "flowEdges": [
+    {
+      "source": "DHaOF-g6T",
+      "sourceHandle": "1",
+      "target": "pF85TkNiZ",
+      "targetHandle": null,
+      "id": "bLALnH7K8"
+    },
+    {
+      "source": "pF85TkNiZ",
+      "sourceHandle": "1",
+      "target": "DHaOF-g6T",
+      "targetHandle": null,
+      "id": "JpB5fSROM"
+    },
+    {
+      "source": "KCwPheVCa",
+      "sourceHandle": "1",
+      "target": "L_aAnU7WV",
+      "targetHandle": null,
+      "id": "gNu99jMNS"
+    },
+    {
+      "source": "hbRF18OA0",
+      "sourceHandle": "1",
+      "target": "DHaOF-g6T",
+      "targetHandle": null,
+      "id": "VS9molVlE"
+    },
+    {
+      "source": "2TFpei23_",
+      "sourceHandle": "1",
+      "target": "hmj3u8LPE",
+      "targetHandle": null,
+      "id": "xIQRTqnRh"
+    },
+    {
+      "source": "HzyLQyeTZ",
+      "sourceHandle": "1",
+      "target": "hbRF18OA0",
+      "targetHandle": null,
+      "id": "g6jn4-VKX"
+    },
+    {
+      "source": "DHaOF-g6T",
+      "sourceHandle": "2",
+      "target": "KTJWm501L",
+      "targetHandle": null,
+      "id": "vdwaPRiVm"
+    },
+    {
+      "source": "L_aAnU7WV",
+      "sourceHandle": "1",
+      "target": "gI_opj7Eu",
+      "targetHandle": null,
+      "id": "Q-8xpgEdC"
+    },
+    {
+      "source": "gI_opj7Eu",
+      "sourceHandle": "1",
+      "target": "IgJ_RMD2A",
+      "targetHandle": null,
+      "id": "bfiO5I9jc"
+    },
+    {
+      "source": "iflVu1_qZ",
+      "sourceHandle": "4",
+      "target": "nSQtSP37o",
+      "targetHandle": null,
+      "id": "gXaWkBNKU"
+    },
+    {
+      "source": "IgJ_RMD2A",
+      "sourceHandle": "1",
+      "target": "HzyLQyeTZ",
+      "targetHandle": null,
+      "id": "FkVgVQnBG"
+    },
+    {
+      "source": "KR6kUsoPS",
+      "sourceHandle": "2",
+      "target": "vMYvmGCY5",
+      "targetHandle": null,
+      "id": "DDd_kgtbr"
+    },
+    {
+      "source": "Z4cNMRrxX",
+      "sourceHandle": "1",
+      "target": "HzyLQyeTZ",
+      "targetHandle": null,
+      "id": "a9pjDGfM1"
+    },
+    {
+      "source": "vMYvmGCY5",
+      "sourceHandle": "1",
+      "target": "KCwPheVCa",
+      "targetHandle": null,
+      "id": "X9pk_cMoZ"
+    },
+    {
+      "source": "NoKaBJzDr",
+      "sourceHandle": "1",
+      "target": "iflVu1_qZ",
+      "targetHandle": null,
+      "id": "Arn_SNjSW"
+    },
+    {
+      "source": "MWhlAN6Jl",
+      "sourceHandle": "1",
+      "target": "_MYz-VHko",
+      "targetHandle": null,
+      "id": "hZ-CXyMZh"
+    },
+    {
+      "source": "xgaVTQKSX",
+      "sourceHandle": "1",
+      "target": "MWhlAN6Jl",
+      "targetHandle": null,
+      "id": "EQ02-wk0E"
+    },
+    {
+      "source": "iflVu1_qZ",
+      "sourceHandle": "1",
+      "target": "oLRSeQhuk",
+      "targetHandle": null,
+      "id": "sRjfu0JVm"
+    },
+    {
+      "source": "oLRSeQhuk",
+      "sourceHandle": "1",
+      "target": "2TFpei23_",
+      "targetHandle": null,
+      "id": "Mk9kfwqeh"
+    },
+    {
+      "source": "_MYz-VHko",
+      "sourceHandle": "1",
+      "target": "-aWUXpqLK",
+      "targetHandle": null,
+      "id": "SLxeAhU8m"
+    },
+    {
+      "source": "-aWUXpqLK",
+      "sourceHandle": "1",
+      "target": "tGHiaWqaX",
+      "targetHandle": null,
+      "id": "bYbwchdkE"
+    },
+    {
+      "source": "KTJWm501L",
+      "sourceHandle": "1",
+      "target": "e_CSZogKq",
+      "targetHandle": null,
+      "id": "RLNpk5NqR"
+    },
+    {
+      "source": "e_CSZogKq",
+      "sourceHandle": "1",
+      "target": "XM-dpycaX",
+      "targetHandle": null,
+      "id": "nbfcAFzHT"
+    },
+    {
+      "source": "XM-dpycaX",
+      "sourceHandle": "1",
+      "target": "xgaVTQKSX",
+      "targetHandle": null,
+      "id": "wMfm76cFB"
+    },
+    {
+      "source": "hmj3u8LPE",
+      "sourceHandle": "1",
+      "target": "KR6kUsoPS",
+      "targetHandle": null,
+      "id": "5l4NsXVvh"
+    },
+    {
+      "source": "KR6kUsoPS",
+      "sourceHandle": "1",
+      "target": "zvoQPuqbD",
+      "targetHandle": null,
+      "id": "CY8IGrvEL"
+    },
+    {
+      "source": "zvoQPuqbD",
+      "sourceHandle": "1",
+      "target": "Z4cNMRrxX",
+      "targetHandle": null,
+      "id": "xk1At3iqv"
+    },
+    {
+      "source": "zvoQPuqbD",
+      "sourceHandle": "2",
+      "target": "sGGDydPG2",
+      "targetHandle": null,
+      "id": "mvOHvaUS-"
+    },
+    {
+      "source": "sGGDydPG2",
+      "sourceHandle": "2",
+      "target": "vMYvmGCY5",
+      "targetHandle": null,
+      "id": "HRMWE41HJ"
+    },
+    {
+      "source": "sGGDydPG2",
+      "sourceHandle": "1",
+      "target": "bRVUz1e1A",
+      "targetHandle": null,
+      "id": "KtjiX5Tjd"
+    },
+    {
+      "source": "bRVUz1e1A",
+      "sourceHandle": "1",
+      "target": "HzyLQyeTZ",
+      "targetHandle": null,
+      "id": "0PIqDZUDL"
+    },
+    {
+      "source": "tGHiaWqaX",
+      "sourceHandle": "1",
+      "target": "fbS-1UaIy",
+      "targetHandle": null,
+      "id": "aPUO6dH2K"
+    },
+    {
+      "source": "fbS-1UaIy",
+      "sourceHandle": "1",
+      "target": "IAt6DFQDN",
+      "targetHandle": null,
+      "id": "wXZAts1Us"
+    }
+  ]
+}

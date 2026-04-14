@@ -1,0 +1,392 @@
+{
+  "_id": "5Of--7F_4",
+  "name": "0: Ready Check",
+  "description": "0: Ready Check",
+  "tags": "",
+  "flowPlugins": [
+    {
+      "name": "Parse file with Sonarr ",
+      "sourceRepo": "Community",
+      "pluginName": "parseFileWithRadarrOrSonarr",
+      "version": "1.0.0",
+      "id": "t9YdcXW2z",
+      "position": {
+        "x": 720,
+        "y": 408
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "arr_host": "http://{{args.variables.serverIP}}:8989",
+        "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+        "arr": "sonarr"
+      }
+    },
+    {
+      "name": "Is in movie dir?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFileNameIncludes",
+      "version": "2.0.0",
+      "id": "9MTU1badM",
+      "position": {
+        "x": 696,
+        "y": 336
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileToCheck": "originalFile",
+        "includeFileDirectory": "true",
+        "terms": "/movies/"
+      }
+    },
+    {
+      "name": "Check Skiplist",
+      "sourceRepo": "Community",
+      "pluginName": "processedCheck",
+      "version": "1.0.0",
+      "id": "57QZ5cTVX",
+      "position": {
+        "x": 672,
+        "y": 0
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Ignore already-processed files.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "bucslCqDd",
+      "position": {
+        "x": 924,
+        "y": 72
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "it's go time",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "uw8I3v--b",
+      "position": {
+        "x": 648,
+        "y": 516
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Go To Processing Flow",
+      "sourceRepo": "Community",
+      "pluginName": "goToFlow",
+      "version": "2.0.0",
+      "id": "pNJn-OPOP",
+      "position": {
+        "x": 648,
+        "y": 576
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "flowId": "P_38Tbyi9"
+      }
+    },
+    {
+      "name": "Parse file with Radarr ",
+      "sourceRepo": "Community",
+      "pluginName": "parseFileWithRadarrOrSonarr",
+      "version": "1.0.0",
+      "id": "DzlSWYKuj",
+      "position": {
+        "x": 564,
+        "y": 408
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "arr_host": "http://{{args.variables.serverIP}}:7878",
+        "arr_api_key": "5e40873c69af46bab1d08cbf3387945f"
+      }
+    },
+    {
+      "name": "Lookup nominal bitrate for resolution",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "Qb3DSpeol",
+      "position": {
+        "x": 672,
+        "y": 60
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "\nmodule.exports = async (args) => {\n\n// Lookup nominal bitrate by first video stream height, then store a precalculated 4x limit.\nconst videoStream = (args.inputFileObj?.ffProbeData?.streams || []).find(\n    (s) => s.codec_type === 'video'\n);\n\nif (!videoStream) {\n    throw new Error('No video stream found in ffProbeData.streams');\n}\n\nconst height = Number(videoStream.height || 0);\n\n// Basic HDR detection (for 4k HDR override)\nconst mediaInfoVideoTrack = (args.inputFileObj?.mediaInfo?.track || []).find(\n    (t) => (t['@type'] || '').toLowerCase() === 'video'\n);\n\nconst hdrHint = [\n    videoStream.color_transfer,\n    videoStream.color_primaries,\n    mediaInfoVideoTrack?.HDR_Format,\n    mediaInfoVideoTrack?.HDR_Format_String,\n]\n    .filter(Boolean)\n    .join(' ')\n    .toLowerCase();\n\nconst isHdr =\n    hdrHint.includes('smpte2084') ||\n    hdrHint.includes('pq') ||\n    hdrHint.includes('hlg') ||\n    hdrHint.includes('hdr');\n\n// Nominal bitrates in kbps (not multiplied)\nconst nominalByHeight = [\n    { h: 480, kbps: 1250 },\n    { h: 576, kbps: 1400 },\n    { h: 720, kbps: 2000 },\n    { h: 1080, kbps: 2500 },\n    { h: 1440, kbps: 3800 },\n    { h: 2160, kbps: 10000 }, // 4k\n];\n\nlet selected = nominalByHeight[0]; // fallback to lowest\nfor (const sp of nominalByHeight) {\n    if (height >= sp.h) selected = sp;\n}\n\n// 4k HDR override\nif (height >= 2160 && isHdr) {\n    selected = { h: 2160, kbps: 12500 }; // bitrate_4k_hdr\n}\n\nconst nominalBitrate4xKbps = selected.kbps * 4;\nconst nominalBitrate8xKbps = selected.kbps * 8;\n\n// Set flow variables for downstream steps\nargs.variables = args.variables || {};\nargs.variables.nominalBitrateKbps = selected.kbps; // nominal bitrate in kbps\nargs.variables.nominalBitrate2x = selected.kbps * 2;\nargs.variables.maxBitrate4x = `${nominalBitrate4xKbps}k`;    // ffmpeg-style string\nargs.variables.maxBitrate8x = `${nominalBitrate8xKbps}k`;    // ffmpeg-style string\n\nconsole.log(\n    `lookupMaxBitrate: height=${height}, hdr=${isHdr}, nominal=${selected.kbps}k, max4x=${nominalBitrate4xKbps}k`\n);\n\n\n\n// do something here\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: 1,\n    variables: args.variables,\n  };\n}\n      "
+      }
+    },
+    {
+      "name": "Check overall bitrate is \"good enough\"",
+      "sourceRepo": "Community",
+      "pluginName": "checkOverallBitrate",
+      "version": "1.0.0",
+      "id": "yaapr76LM",
+      "position": {
+        "x": 672,
+        "y": 132
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "lessThan": "{{args.variables.nominalBitrate2x}}"
+      }
+    },
+    {
+      "name": "Is it Hevc?",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoCodec",
+      "version": "1.0.0",
+      "id": "yPEwO_IWY",
+      "position": {
+        "x": 672,
+        "y": 204
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Good enough!",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "LYs51mCkn",
+      "position": {
+        "x": 384,
+        "y": 348
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Add To Skiplist",
+      "sourceRepo": "Community",
+      "pluginName": "processedAdd",
+      "version": "1.0.0",
+      "id": "0r3aVju98",
+      "position": {
+        "x": 384,
+        "y": 396
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "This shit no worky",
+      "sourceRepo": "Community",
+      "pluginName": "apprise",
+      "version": "1.0.0",
+      "id": "PLcCRlo7L",
+      "position": {
+        "x": 900,
+        "y": 468
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "command": "-vv -t \"Tdarr can't contact rdarr/sonarr and is mad about it\" -b \"File {{{args.inputFileObj._id}}}.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+      }
+    },
+    {
+      "name": "Fail Flow",
+      "sourceRepo": "Community",
+      "pluginName": "failFlow",
+      "version": "1.0.0",
+      "id": "JRq0z6QFZ",
+      "position": {
+        "x": 900,
+        "y": 528
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Extract Server Host bc tdarr is stupid and \"ServerIP\" isn't populated",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "FnG4toRN7",
+      "position": {
+        "x": 672,
+        "y": -84
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "\nmodule.exports = async (args) => {\n\n  url = new URL(args.configVars.config.serverURL);\n  args.variables.serverIP = url.hostname;\n\n\n// do something here\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: 1,\n    variables: args.variables,\n  };\n}\n      "
+      }
+    },
+    {
+      "name": "Input File",
+      "sourceRepo": "Community",
+      "pluginName": "inputFile",
+      "version": "1.0.0",
+      "id": "vIiR3axQZ",
+      "position": {
+        "x": 672,
+        "y": -144
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileAccessChecks": "true",
+        "pauseNodeIfAccessChecksFail": "true"
+      }
+    },
+    {
+      "name": "Has Normalized Audio Stream?",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "6CRW9T_75",
+      "position": {
+        "x": 672,
+        "y": 264
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "audio",
+        "valuesToMatch": "norm,Norm,NORM",
+        "propertyToCheck": "tags.title"
+      }
+    }
+  ],
+  "flowEdges": [
+    {
+      "source": "57QZ5cTVX",
+      "sourceHandle": "2",
+      "target": "bucslCqDd",
+      "targetHandle": null,
+      "id": "FL1jlVYH3"
+    },
+    {
+      "source": "uw8I3v--b",
+      "sourceHandle": "1",
+      "target": "pNJn-OPOP",
+      "targetHandle": null,
+      "id": "8gA43abXF"
+    },
+    {
+      "source": "9MTU1badM",
+      "sourceHandle": "1",
+      "target": "DzlSWYKuj",
+      "targetHandle": null,
+      "id": "NYHJ175VV"
+    },
+    {
+      "source": "57QZ5cTVX",
+      "sourceHandle": "1",
+      "target": "Qb3DSpeol",
+      "targetHandle": null,
+      "id": "_5QNAm2To"
+    },
+    {
+      "source": "Qb3DSpeol",
+      "sourceHandle": "1",
+      "target": "yaapr76LM",
+      "targetHandle": null,
+      "id": "v4vxtiuDP"
+    },
+    {
+      "source": "yaapr76LM",
+      "sourceHandle": "1",
+      "target": "yPEwO_IWY",
+      "targetHandle": null,
+      "id": "B-7PuMJno"
+    },
+    {
+      "source": "yaapr76LM",
+      "sourceHandle": "2",
+      "target": "9MTU1badM",
+      "targetHandle": null,
+      "id": "bYQgbd6ir"
+    },
+    {
+      "source": "yPEwO_IWY",
+      "sourceHandle": "2",
+      "target": "9MTU1badM",
+      "targetHandle": null,
+      "id": "J_fSc3aRI"
+    },
+    {
+      "source": "PLcCRlo7L",
+      "sourceHandle": "1",
+      "target": "JRq0z6QFZ",
+      "targetHandle": null,
+      "id": "tgAuSZCE-"
+    },
+    {
+      "source": "FnG4toRN7",
+      "sourceHandle": "1",
+      "target": "57QZ5cTVX",
+      "targetHandle": null,
+      "id": "H8hFOUi5j"
+    },
+    {
+      "source": "vIiR3axQZ",
+      "sourceHandle": "1",
+      "target": "FnG4toRN7",
+      "targetHandle": null,
+      "id": "VOI-rVmQj"
+    },
+    {
+      "source": "LYs51mCkn",
+      "sourceHandle": "1",
+      "target": "0r3aVju98",
+      "targetHandle": null,
+      "id": "Rb5PIFqdQ"
+    },
+    {
+      "source": "yPEwO_IWY",
+      "sourceHandle": "1",
+      "target": "6CRW9T_75",
+      "targetHandle": null,
+      "id": "gb1JoD3Ia"
+    },
+    {
+      "source": "6CRW9T_75",
+      "sourceHandle": "2",
+      "target": "9MTU1badM",
+      "targetHandle": null,
+      "id": "4B_5zQSHV"
+    },
+    {
+      "source": "6CRW9T_75",
+      "sourceHandle": "1",
+      "target": "LYs51mCkn",
+      "targetHandle": null,
+      "id": "X5cdtdfgM"
+    },
+    {
+      "source": "9MTU1badM",
+      "sourceHandle": "2",
+      "target": "t9YdcXW2z",
+      "targetHandle": null,
+      "id": "gHmN6AAkX"
+    },
+    {
+      "source": "DzlSWYKuj",
+      "sourceHandle": "err1",
+      "target": "PLcCRlo7L",
+      "targetHandle": null,
+      "id": "uCfOJf97p"
+    },
+    {
+      "source": "t9YdcXW2z",
+      "sourceHandle": "err1",
+      "target": "PLcCRlo7L",
+      "targetHandle": null,
+      "id": "czmu2O0Si"
+    },
+    {
+      "source": "DzlSWYKuj",
+      "sourceHandle": "1",
+      "target": "uw8I3v--b",
+      "targetHandle": null,
+      "id": "-XepOx8BO"
+    },
+    {
+      "source": "t9YdcXW2z",
+      "sourceHandle": "1",
+      "target": "uw8I3v--b",
+      "targetHandle": null,
+      "id": "cbFgmRWML"
+    }
+  ]
+}

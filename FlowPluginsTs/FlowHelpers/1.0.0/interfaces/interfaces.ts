@@ -6,7 +6,7 @@ export interface IpluginInputUi {
     // boolean inputs will default to a switch
     type: 'dropdown' | 'text' | 'textarea' | 'directory' | 'slider' | 'switch' | 'codeEditor',
     options?: string[],
-    sliderOptions?: {max: number, min: number, }
+    sliderOptions?: { max: number, min: number, }
     style?: Record<string, unknown>,
     onSelect?: {
         [index: string]: {
@@ -152,7 +152,7 @@ export interface IconfigVars {
         priority: number,
         cronPluginUpdate: string,
         apiKey: string,
-        seededWorkerLimits?:{
+        seededWorkerLimits?: {
             [index: string]: number,
         },
         maxLogSizeMB: number,

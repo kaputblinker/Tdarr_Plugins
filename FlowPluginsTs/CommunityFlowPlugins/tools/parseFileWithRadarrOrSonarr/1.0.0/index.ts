@@ -66,6 +66,7 @@ interface IArrInfo {
   originalPath: string,
   releaseGroup?: string,
   sceneName?: string,
+  data?: any,
 }
 
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
@@ -108,6 +109,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       arrInfo.originalPath = res.data.movieFile.path ? res.data.movieFile.path : args.originalLibraryFile._id;
       arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
       arrInfo.sceneName = res.data.movieFile.sceneName;
+      arrInfo.data = res.data;
 
       args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
     } catch (error) {
@@ -141,7 +143,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       arrInfo.originalPath = res.data.episodeFile.path ? res.data.episodeFile.path : args.originalLibraryFile._id;
       arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
       arrInfo.sceneName = res.data.episodeFile.sceneName;
-
+      arrInfo.data = res.data;
       args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
     } catch (error) {
       if (args.deps.axios.isAxiosError(error)) {

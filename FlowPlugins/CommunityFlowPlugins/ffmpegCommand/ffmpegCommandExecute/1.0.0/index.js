@@ -74,7 +74,7 @@ exports.details = details;
 var getOuputStreamIndex = function (streams, stream) {
     var index = -1;
     for (var idx = 0; idx < streams.length; idx += 1) {
-        if (!stream.removed) {
+        if (!stream.removed && !stream.extraExportArgs) {
             index += 1;
         }
         if (streams[idx].index === stream.index) {
@@ -86,7 +86,7 @@ var getOuputStreamIndex = function (streams, stream) {
 var getOuputStreamTypeIndex = function (streams, stream) {
     var index = -1;
     for (var idx = 0; idx < streams.length; idx += 1) {
-        if (!stream.removed && streams[idx].codec_type === stream.codec_type) {
+        if (!stream.removed && !stream.extraExportArgs && streams[idx].codec_type === stream.codec_type) {
             index += 1;
         }
         if (streams[idx].index === stream.index) {
@@ -97,7 +97,7 @@ var getOuputStreamTypeIndex = function (streams, stream) {
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cliArgs, _a, shouldProcess, streams, inputArgs, _loop_1, i, idx, outputFilePath, spawnArgs, cli, res;
+    var lib, cliArgs, _a, shouldProcess, streams, inputArgs, _loop_1, i, idx, outputFilePath, i, stream, spawnArgs, cli, res;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -137,6 +137,9 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         }
                         return arg;
                     });
+                    if (stream.extraExport) {
+                        return "continue";
+                    }
                     cliArgs.push.apply(cliArgs, stream.mapArgs);
                     if (stream.outputArgs.length === 0) {
                         cliArgs.push("-c:".concat(getOuputStreamIndex(streams, stream)), 'copy');
@@ -166,6 +169,19 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 outputFilePath = "".concat((0, fileUtils_1.getPluginWorkDir)(args), "/").concat((0, fileUtils_1.getFileName)(args.inputFileObj._id))
                     + ".".concat(args.variables.ffmpegCommand.container);
                 cliArgs.push(outputFilePath);
+                for (i = 0; i < streams.length; i += 1) {
+                    stream = streams[i];
+                    if (stream.extraExport) {
+                        cliArgs.push.apply(cliArgs, stream.mapArgs);
+                        if (stream.outputArgs.length === 0) {
+                            cliArgs.push("-c:".concat(getOuputStreamIndex(streams, stream)), 'copy');
+                        }
+                        else {
+                            cliArgs.push.apply(cliArgs, stream.outputArgs);
+                        }
+                        inputArgs.push.apply(inputArgs, stream.inputArgs);
+                    }
+                }
                 spawnArgs = cliArgs.map(function (row) { return row.trim(); }).filter(function (row) { return row !== ''; });
                 args.jobLog('Processing file');
                 args.jobLog(JSON.stringify({
