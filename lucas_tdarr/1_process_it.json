@@ -93,7 +93,7 @@
       "version": "1.0.0",
       "id": "2TFpei23_",
       "position": {
-        "x": 804,
+        "x": 816,
         "y": 12
       },
       "fpEnabled": true
@@ -125,7 +125,7 @@
       },
       "fpEnabled": true,
       "inputsDB": {
-        "outputArguments": "-map 0:{{args.variables.audio_curr_ind}} -c:a:{{args.variables.audio_metadata_ind}} libopus -b:a:{{args.variables.audio_metadata_ind}} {{args.variables.audio_curr_bitrate}} -metadata:s:a:{{args.variables.audio_metadata_ind}} language={{args.variables.audio_curr_lang}} -metadata:s:a:{{args.variables.audio_metadata_ind}} title=Stereo_{{args.variables.audio_curr_lang}}"
+        "outputArguments": "-map 0:{{args.variables.audio_curr_ind}} -c:a:{{args.variables.audio_metadata_ind}} libopus -b:a:{{args.variables.audio_metadata_ind}} {{args.variables.audio_curr_bitrate}} -metadata:s:a:{{args.variables.audio_metadata_ind}} language={{args.variables.audio_curr_lang}} -metadata:s:a:{{args.variables.audio_metadata_ind}} title=Original_{{args.variables.audio_curr_lang}}"
       }
     },
     {
@@ -157,21 +157,6 @@
       "inputsDB": {
         "hardwareEncoding": "false",
         "ffmpegQuality": "22"
-      }
-    },
-    {
-      "name": "Lookup max bitrate based on resolution",
-      "sourceRepo": "Community",
-      "pluginName": "customFunction",
-      "version": "1.0.0",
-      "id": "hmj3u8LPE",
-      "position": {
-        "x": 804,
-        "y": 72
-      },
-      "fpEnabled": true,
-      "inputsDB": {
-        "code": "module.exports = async (args) => {\n    // Use the caller-provided normalized resolution label directly.\n    const resolutionLabel = String(args.inputFileObj?.video_resolution || '').trim();\n\n    if (!resolutionLabel) {\n        throw new Error('Missing args.inputFileObj.video_resolution');\n    }\n\n    const bitrateLookupKbps = {\n        '480p': 900,\n        '576p': 1200,\n        '720p': 2400,\n        '1080p': 4000,\n        '1440p': 6000,\n        '4KUHD': 8000,\n        'DCI4K': 10000,\n        '8KUHD': 12500\n    };\n\n    const targetBitrateKbps = bitrateLookupKbps[resolutionLabel];\n\n    if (!targetBitrateKbps) {\n        const valid = Object.keys(bitrateLookupKbps).join(', ');\n        throw new Error(\n            'Unsupported video_resolution \"' +\n            resolutionLabel +\n            '\". Expected one of: ' +\n            valid\n        );\n    }\n    \n    // Set flow variables for downstream steps.\n    args.variables = args.variables || {};\n    args.variables.targetBitrateKbps = targetBitrateKbps;\n    args.variables.videoTranscodeThresholdKps = targetBitrateKbps * 1.5;\n    args.variables.maxBitrate4x = String(targetBitrateKbps * 4) + 'k';\n    args.variables.maxBitrate8x = String(targetBitrateKbps * 8) + 'k';\n\n    args.jobLog(\n        'lookupMaxBitrate: resolution=' +\n        resolutionLabel +\n        ', target=' +\n        targetBitrateKbps +\n        'k, threshold=' +\n        args.variables.videoTranscodeThresholdKps +\n        'k, max4x=' +\n        args.variables.maxBitrate4x +\n        'k, max8x=' +\n        args.variables.maxBitrate8x +\n        'k'\n    );\n\n    return {\n        outputFileObj: args.inputFileObj,\n        outputNumber: 1,\n        variables: args.variables\n    };\n};"
       }
     },
     {
@@ -388,7 +373,7 @@
       "version": "1.0.0",
       "id": "oLRSeQhuk",
       "position": {
-        "x": 804,
+        "x": 816,
         "y": -36
       },
       "fpEnabled": true
@@ -440,6 +425,18 @@
       "inputsDB": {
         "fileToAdd": "workingFile"
       }
+    },
+    {
+      "name": "The following logic assumes we did the bitrate lookup in step 0",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "kV2B30z_y",
+      "position": {
+        "x": 816,
+        "y": 72
+      },
+      "fpEnabled": true
     }
   ],
   "flowEdges": [
@@ -470,13 +467,6 @@
       "target": "DHaOF-g6T",
       "targetHandle": null,
       "id": "VS9molVlE"
-    },
-    {
-      "source": "2TFpei23_",
-      "sourceHandle": "1",
-      "target": "hmj3u8LPE",
-      "targetHandle": null,
-      "id": "xIQRTqnRh"
     },
     {
       "source": "HzyLQyeTZ",
@@ -612,13 +602,6 @@
       "id": "wMfm76cFB"
     },
     {
-      "source": "hmj3u8LPE",
-      "sourceHandle": "1",
-      "target": "KR6kUsoPS",
-      "targetHandle": null,
-      "id": "5l4NsXVvh"
-    },
-    {
       "source": "KR6kUsoPS",
       "sourceHandle": "1",
       "target": "zvoQPuqbD",
@@ -673,6 +656,20 @@
       "target": "IAt6DFQDN",
       "targetHandle": null,
       "id": "wXZAts1Us"
+    },
+    {
+      "source": "2TFpei23_",
+      "sourceHandle": "1",
+      "target": "kV2B30z_y",
+      "targetHandle": null,
+      "id": "HjLRphgl2"
+    },
+    {
+      "source": "kV2B30z_y",
+      "sourceHandle": "1",
+      "target": "KR6kUsoPS",
+      "targetHandle": null,
+      "id": "OaYyqtdrS"
     }
   ]
 }

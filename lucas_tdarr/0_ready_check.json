@@ -117,7 +117,7 @@
       },
       "fpEnabled": true,
       "inputsDB": {
-        "code": "\nmodule.exports = async (args) => {\n\n// Lookup nominal bitrate by first video stream height, then store a precalculated 4x limit.\nconst videoStream = (args.inputFileObj?.ffProbeData?.streams || []).find(\n    (s) => s.codec_type === 'video'\n);\n\nif (!videoStream) {\n    throw new Error('No video stream found in ffProbeData.streams');\n}\n\nconst height = Number(videoStream.height || 0);\n\n// Basic HDR detection (for 4k HDR override)\nconst mediaInfoVideoTrack = (args.inputFileObj?.mediaInfo?.track || []).find(\n    (t) => (t['@type'] || '').toLowerCase() === 'video'\n);\n\nconst hdrHint = [\n    videoStream.color_transfer,\n    videoStream.color_primaries,\n    mediaInfoVideoTrack?.HDR_Format,\n    mediaInfoVideoTrack?.HDR_Format_String,\n]\n    .filter(Boolean)\n    .join(' ')\n    .toLowerCase();\n\nconst isHdr =\n    hdrHint.includes('smpte2084') ||\n    hdrHint.includes('pq') ||\n    hdrHint.includes('hlg') ||\n    hdrHint.includes('hdr');\n\n// Nominal bitrates in kbps (not multiplied)\nconst nominalByHeight = [\n    { h: 480, kbps: 1250 },\n    { h: 576, kbps: 1400 },\n    { h: 720, kbps: 2000 },\n    { h: 1080, kbps: 2500 },\n    { h: 1440, kbps: 3800 },\n    { h: 2160, kbps: 10000 }, // 4k\n];\n\nlet selected = nominalByHeight[0]; // fallback to lowest\nfor (const sp of nominalByHeight) {\n    if (height >= sp.h) selected = sp;\n}\n\n// 4k HDR override\nif (height >= 2160 && isHdr) {\n    selected = { h: 2160, kbps: 12500 }; // bitrate_4k_hdr\n}\n\nconst nominalBitrate4xKbps = selected.kbps * 4;\nconst nominalBitrate8xKbps = selected.kbps * 8;\n\n// Set flow variables for downstream steps\nargs.variables = args.variables || {};\nargs.variables.nominalBitrateKbps = selected.kbps; // nominal bitrate in kbps\nargs.variables.nominalBitrate2x = selected.kbps * 2;\nargs.variables.maxBitrate4x = `${nominalBitrate4xKbps}k`;    // ffmpeg-style string\nargs.variables.maxBitrate8x = `${nominalBitrate8xKbps}k`;    // ffmpeg-style string\n\nconsole.log(\n    `lookupMaxBitrate: height=${height}, hdr=${isHdr}, nominal=${selected.kbps}k, max4x=${nominalBitrate4xKbps}k`\n);\n\n\n\n// do something here\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: 1,\n    variables: args.variables,\n  };\n}\n      "
+        "code": "module.exports = async (args) => {\n    // Use the caller-provided normalized resolution label directly.\n    const resolutionLabel = String(args.inputFileObj?.video_resolution || '').trim();\n\n    if (!resolutionLabel) {\n        throw new Error('Missing args.inputFileObj.video_resolution');\n    }\n\n    // Derived via a combination of me looking at past results and me making stuff up.\n    // These are somewhat generous to try and make sure that even more visually complex stuff, will be around this.\n    // There are ofc very complex exceptions that get transcoded for very little benefit. Mainly Avatar 3. That thing is bananas.\n    const bitrateLookupKbps = {\n        '480p': 900,\n        '576p': 1200,\n        '720p': 2400,\n        '1080p': 3500,\n        '1440p': 5200,\n        '4KUHD': 7000,\n        'DCI4K': 9000,\n        '8KUHD': 12500\n    };\n\n    const targetBitrateKbps = bitrateLookupKbps[resolutionLabel];\n\n    if (!targetBitrateKbps) {\n        const valid = Object.keys(bitrateLookupKbps).join(', ');\n        throw new Error(\n            'Unsupported video_resolution \"' +\n            resolutionLabel +\n            '\". Expected one of: ' +\n            valid\n        );\n    }\n    \n    // Set flow variables for downstream steps.\n    args.variables = args.variables || {};\n    args.variables.targetBitrateKbps = targetBitrateKbps;\n    args.variables.videoTranscodeThresholdKps = targetBitrateKbps * 1.5;\n    args.variables.overallBitrateThresholdKps = targetBitrateKbps * 2;\n    args.variables.maxBitrate4x = String(targetBitrateKbps * 4) + 'k';\n    args.variables.maxBitrate8x = String(targetBitrateKbps * 8) + 'k';\n\n    args.jobLog(\n        'lookupMaxBitrate: resolution=' +\n        resolutionLabel +\n        ', target=' +\n        targetBitrateKbps +\n        'k, threshold=' +\n        args.variables.videoTranscodeThresholdKps +\n        'k, max4x=' +\n        args.variables.maxBitrate4x +\n        'k, max8x=' +\n        args.variables.maxBitrate8x +\n        'k'\n    );\n\n    return {\n        outputFileObj: args.inputFileObj,\n        outputNumber: 1,\n        variables: args.variables\n    };\n};"
       }
     },
     {
@@ -128,24 +128,12 @@
       "id": "yaapr76LM",
       "position": {
         "x": 672,
-        "y": 132
+        "y": 168
       },
       "fpEnabled": true,
       "inputsDB": {
-        "lessThan": "{{args.variables.nominalBitrate2x}}"
+        "lessThan": "{{args.variables.overallBitrateThresholdKps}}"
       }
-    },
-    {
-      "name": "Is it Hevc?",
-      "sourceRepo": "Community",
-      "pluginName": "checkVideoCodec",
-      "version": "1.0.0",
-      "id": "yPEwO_IWY",
-      "position": {
-        "x": 672,
-        "y": 204
-      },
-      "fpEnabled": true
     },
     {
       "name": "Good enough!",
@@ -285,24 +273,10 @@
     },
     {
       "source": "yaapr76LM",
-      "sourceHandle": "1",
-      "target": "yPEwO_IWY",
-      "targetHandle": null,
-      "id": "B-7PuMJno"
-    },
-    {
-      "source": "yaapr76LM",
       "sourceHandle": "2",
       "target": "9MTU1badM",
       "targetHandle": null,
       "id": "bYQgbd6ir"
-    },
-    {
-      "source": "yPEwO_IWY",
-      "sourceHandle": "2",
-      "target": "9MTU1badM",
-      "targetHandle": null,
-      "id": "J_fSc3aRI"
     },
     {
       "source": "PLcCRlo7L",
@@ -331,13 +305,6 @@
       "target": "0r3aVju98",
       "targetHandle": null,
       "id": "Rb5PIFqdQ"
-    },
-    {
-      "source": "yPEwO_IWY",
-      "sourceHandle": "1",
-      "target": "6CRW9T_75",
-      "targetHandle": null,
-      "id": "gb1JoD3Ia"
     },
     {
       "source": "6CRW9T_75",
@@ -387,6 +354,13 @@
       "target": "uw8I3v--b",
       "targetHandle": null,
       "id": "cbFgmRWML"
+    },
+    {
+      "source": "yaapr76LM",
+      "sourceHandle": "1",
+      "target": "6CRW9T_75",
+      "targetHandle": null,
+      "id": "WrQNjNgpV"
     }
   ]
 }
