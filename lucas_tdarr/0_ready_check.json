@@ -17,7 +17,7 @@
       "fpEnabled": true,
       "inputsDB": {
         "arr_host": "http://{{args.variables.serverIP}}:8989",
-        "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+        "arr_api_key": "{{args.userVariables.library.sonarr_key}}",
         "arr": "sonarr"
       }
     },
@@ -102,7 +102,7 @@
       "fpEnabled": true,
       "inputsDB": {
         "arr_host": "http://{{args.variables.serverIP}}:7878",
-        "arr_api_key": "5e40873c69af46bab1d08cbf3387945f"
+        "arr_api_key": "{{args.userVariables.library.radarr_key}}"
       }
     },
     {
@@ -171,7 +171,7 @@
       },
       "fpEnabled": true,
       "inputsDB": {
-        "command": "-vv -t \"Tdarr can't contact rdarr/sonarr and is mad about it\" -b \"File {{{args.inputFileObj._id}}}.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+        "command": "-vv -t \"Tdarr can't contact rdarr/sonarr and is mad about it\" -b \"File {{{args.inputFileObj._id}}}.\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
       }
     },
     {

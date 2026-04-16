@@ -16,7 +16,7 @@
             },
             "fpEnabled": true,
             "inputsDB": {
-                "command": "-vv -t \"Radarr/Sonarr could not import compressed {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\nEither Radarr/Sonarr couldn't be contacted or it forgot/never knew about about the old version of this file.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+                "command": "-vv -t \"Radarr/Sonarr could not import compressed {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\nEither Radarr/Sonarr couldn't be contacted or it forgot/never knew about about the old version of this file.\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
             }
         },
         {
@@ -32,7 +32,7 @@
             "fpEnabled": true,
             "inputsDB": {
                 "arr_host": "http://{{{args.variables.serverIP}}}:8989",
-                "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+                "arr_api_key": "{{args.userVariables.library.sonarr_key}}",
                 "arr": "sonarr"
             }
         },
@@ -58,7 +58,7 @@
             "pluginName": "notifyRadarrOrSonarr",
             "version": "2.0.0",
             "inputsDB": {
-                "arr_api_key": "5e40873c69af46bab1d08cbf3387945f",
+                "arr_api_key": "{{args.userVariables.library.radarr_key}}",
                 "arr_host": "http://{{{args.variables.serverIP}}}:7878"
             },
             "fpEnabled": true,
@@ -75,7 +75,7 @@
             "version": "2.0.0",
             "inputsDB": {
                 "arr": "sonarr",
-                "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+                "arr_api_key": "{{args.userVariables.library.sonarr_key}}",
                 "arr_host": "http://{{{args.variables.serverIP}}}:8989"
             },
             "fpEnabled": true,
@@ -110,7 +110,7 @@
             "fpEnabled": true,
             "inputsDB": {
                 "arr_host": "http://{{{args.variables.serverIP}}}:7878",
-                "arr_api_key": "5e40873c69af46bab1d08cbf3387945f"
+                "arr_api_key": "{{args.userVariables.library.radarr_key}}"
             }
         },
         {
@@ -125,7 +125,7 @@
             },
             "fpEnabled": true,
             "inputsDB": {
-                "command": "-vv -t \"Tdarr finished {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+                "command": "-vv -t \"Tdarr finished {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
             }
         },
         {
