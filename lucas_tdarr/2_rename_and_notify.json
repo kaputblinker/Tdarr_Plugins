@@ -1,0 +1,322 @@
+{
+    "_id": "dDuhVb_7n",
+    "name": "2: Notify *Arr and Rename",
+    "description": "2: Notify *Arr and Rename",
+    "tags": "",
+    "flowPlugins": [
+        {
+            "name": "Radarr/Sonarr import failures are annoying and need to be handled manually",
+            "sourceRepo": "Community",
+            "pluginName": "apprise",
+            "version": "1.0.0",
+            "id": "VWtbfKhMI",
+            "position": {
+                "x": 480,
+                "y": 192
+            },
+            "fpEnabled": true,
+            "inputsDB": {
+                "command": "-vv -t \"Radarr/Sonarr could not import compressed {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\nEither Radarr/Sonarr couldn't be contacted or it forgot/never knew about about the old version of this file.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+            }
+        },
+        {
+            "name": "Apply Sonarr naming policy",
+            "sourceRepo": "Community",
+            "pluginName": "applyRadarrOrSonarrNamingPolicy",
+            "version": "1.0.0",
+            "id": "P9t14PPb-",
+            "position": {
+                "x": 264,
+                "y": 84
+            },
+            "fpEnabled": true,
+            "inputsDB": {
+                "arr_host": "http://{{{args.variables.serverIP}}}:8989",
+                "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+                "arr": "sonarr"
+            }
+        },
+        {
+            "name": "Is a Movie file?",
+            "sourceRepo": "Community",
+            "pluginName": "checkFileNameIncludes",
+            "version": "2.0.0",
+            "inputsDB": {
+                "terms": "/movies/",
+                "includeFileDirectory": "true"
+            },
+            "fpEnabled": true,
+            "id": "eaq7EeEjk",
+            "position": {
+                "x": 180,
+                "y": -60
+            }
+        },
+        {
+            "name": "Notify Radarr",
+            "sourceRepo": "Community",
+            "pluginName": "notifyRadarrOrSonarr",
+            "version": "2.0.0",
+            "inputsDB": {
+                "arr_api_key": "5e40873c69af46bab1d08cbf3387945f",
+                "arr_host": "http://{{{args.variables.serverIP}}}:7878"
+            },
+            "fpEnabled": true,
+            "id": "Sc2W2IDF6",
+            "position": {
+                "x": 96,
+                "y": 24
+            }
+        },
+        {
+            "name": "Notify Sonarr",
+            "sourceRepo": "Community",
+            "pluginName": "notifyRadarrOrSonarr",
+            "version": "2.0.0",
+            "inputsDB": {
+                "arr": "sonarr",
+                "arr_api_key": "fabe0c4bc89d47d6904d0ffeb7f7a11e",
+                "arr_host": "http://{{{args.variables.serverIP}}}:8989"
+            },
+            "fpEnabled": true,
+            "id": "mQJzP_USK",
+            "position": {
+                "x": 264,
+                "y": 24
+            }
+        },
+        {
+            "name": "Input File",
+            "sourceRepo": "Community",
+            "pluginName": "inputFile",
+            "version": "1.0.0",
+            "fpEnabled": true,
+            "id": "KFFcjhpSf",
+            "position": {
+                "x": 180,
+                "y": -132
+            }
+        },
+        {
+            "name": "Apply Radarr naming policy",
+            "sourceRepo": "Community",
+            "pluginName": "applyRadarrOrSonarrNamingPolicy",
+            "version": "1.0.0",
+            "id": "qJ78KOabZ",
+            "position": {
+                "x": 96,
+                "y": 84
+            },
+            "fpEnabled": true,
+            "inputsDB": {
+                "arr_host": "http://{{{args.variables.serverIP}}}:7878",
+                "arr_api_key": "5e40873c69af46bab1d08cbf3387945f"
+            }
+        },
+        {
+            "name": "Apprise - Notify Finish",
+            "sourceRepo": "Community",
+            "pluginName": "apprise",
+            "version": "1.0.0",
+            "id": "_n6MCk8c3",
+            "position": {
+                "x": 204,
+                "y": 264
+            },
+            "fpEnabled": true,
+            "inputsDB": {
+                "command": "-vv -t \"Tdarr finished {{{args.originalLibraryFile.meta.Title}}}\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nNew Size: {{{args.inputFileObj.oldSize}}} GB.\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+            }
+        },
+        {
+            "name": "Import Extracted Subtitles",
+            "sourceRepo": "Community",
+            "pluginName": "importExtractedSubtitles",
+            "version": "1.0.0",
+            "id": "sEr5Qln_h",
+            "position": {
+                "x": 204,
+                "y": 216
+            },
+            "fpEnabled": true
+        },
+        {
+            "name": "Fail Flow",
+            "sourceRepo": "Community",
+            "pluginName": "failFlow",
+            "version": "1.0.0",
+            "id": "O6HfFhK8B",
+            "position": {
+                "x": 480,
+                "y": 288
+            },
+            "fpEnabled": true
+        },
+        {
+            "name": "Ignore notification failures (usually because I ran out of free-tier ntfy pings)\n",
+            "sourceRepo": "Community",
+            "pluginName": "comment",
+            "version": "1.0.0",
+            "id": "FgMvGsDab",
+            "position": {
+                "x": 324,
+                "y": 312
+            },
+            "fpEnabled": true
+        },
+        {
+            "name": "Reset Flow Error",
+            "sourceRepo": "Community",
+            "pluginName": "resetFlowError",
+            "version": "1.0.0",
+            "id": "K2Io77W_-",
+            "position": {
+                "x": 324,
+                "y": 420
+            },
+            "fpEnabled": true
+        }
+    ],
+    "flowEdges": [
+        {
+            "source": "KFFcjhpSf",
+            "sourceHandle": "1",
+            "target": "eaq7EeEjk",
+            "targetHandle": null,
+            "id": "UVlq93xGt"
+        },
+        {
+            "source": "eaq7EeEjk",
+            "sourceHandle": "2",
+            "target": "mQJzP_USK",
+            "targetHandle": null,
+            "id": "9m0g8iDAY"
+        },
+        {
+            "source": "mQJzP_USK",
+            "sourceHandle": "1",
+            "target": "P9t14PPb-",
+            "targetHandle": null,
+            "id": "IR5NlYtwA"
+        },
+        {
+            "source": "eaq7EeEjk",
+            "sourceHandle": "1",
+            "target": "Sc2W2IDF6",
+            "targetHandle": null,
+            "id": "riBpmkvGW"
+        },
+        {
+            "source": "Sc2W2IDF6",
+            "sourceHandle": "1",
+            "target": "qJ78KOabZ",
+            "targetHandle": null,
+            "id": "VWYKtWq1B"
+        },
+        {
+            "source": "P9t14PPb-",
+            "sourceHandle": "1",
+            "target": "sEr5Qln_h",
+            "targetHandle": null,
+            "id": "KML21ZedC"
+        },
+        {
+            "source": "qJ78KOabZ",
+            "sourceHandle": "1",
+            "target": "sEr5Qln_h",
+            "targetHandle": null,
+            "id": "AW_KZTPgK"
+        },
+        {
+            "source": "sEr5Qln_h",
+            "sourceHandle": "1",
+            "target": "_n6MCk8c3",
+            "targetHandle": null,
+            "id": "m0d8dKscx"
+        },
+        {
+            "source": "qJ78KOabZ",
+            "sourceHandle": "err1",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "LYbR-xCG_"
+        },
+        {
+            "source": "P9t14PPb-",
+            "sourceHandle": "err1",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "YJqcCUDbE"
+        },
+        {
+            "source": "mQJzP_USK",
+            "sourceHandle": "err1",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "XrIoQPaxB"
+        },
+        {
+            "source": "Sc2W2IDF6",
+            "sourceHandle": "err1",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "bOx5SNKHf"
+        },
+        {
+            "source": "Sc2W2IDF6",
+            "sourceHandle": "2",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "DBeryO6Zn"
+        },
+        {
+            "source": "mQJzP_USK",
+            "sourceHandle": "2",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "ukzxb7yXJ"
+        },
+        {
+            "source": "P9t14PPb-",
+            "sourceHandle": "2",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "jqxg7aQ92"
+        },
+        {
+            "source": "qJ78KOabZ",
+            "sourceHandle": "2",
+            "target": "VWtbfKhMI",
+            "targetHandle": null,
+            "id": "vQ3y6Dano"
+        },
+        {
+            "source": "VWtbfKhMI",
+            "sourceHandle": "1",
+            "target": "O6HfFhK8B",
+            "targetHandle": null,
+            "id": "Q61dMC3vV"
+        },
+        {
+            "source": "VWtbfKhMI",
+            "sourceHandle": "err1",
+            "target": "O6HfFhK8B",
+            "targetHandle": null,
+            "id": "Ezr50_S4O"
+        },
+        {
+            "source": "_n6MCk8c3",
+            "sourceHandle": "err1",
+            "target": "FgMvGsDab",
+            "targetHandle": null,
+            "id": "wfF5Qea5B"
+        },
+        {
+            "source": "FgMvGsDab",
+            "sourceHandle": "1",
+            "target": "K2Io77W_-",
+            "targetHandle": null,
+            "id": "STMx2fNQij"
+        }
+    ]
+}

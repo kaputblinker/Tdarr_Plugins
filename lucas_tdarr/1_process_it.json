@@ -185,7 +185,7 @@
       "id": "_MYz-VHko",
       "position": {
         "x": 720,
-        "y": 1344
+        "y": 1392
       },
       "fpEnabled": true
     },
@@ -323,7 +323,7 @@
       "id": "XM-dpycaX",
       "position": {
         "x": 720,
-        "y": 1164
+        "y": 1224
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -350,7 +350,7 @@
       "id": "MWhlAN6Jl",
       "position": {
         "x": 720,
-        "y": 1284
+        "y": 1344
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -365,7 +365,7 @@
       "id": "xgaVTQKSX",
       "position": {
         "x": 720,
-        "y": 1224
+        "y": 1284
       },
       "fpEnabled": true
     },
@@ -460,7 +460,7 @@
       "version": "1.0.0",
       "id": "3zMe3C6_2",
       "position": {
-        "x": 972,
+        "x": 1020,
         "y": 36
       },
       "fpEnabled": true,
@@ -493,6 +493,33 @@
       "fpEnabled": true,
       "inputsDB": {
         "command": "-vv -t \"It actually happened? We couldn't find the video bitrate for a non-mkv file?\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nI left a super long comment in the flow about how I was going to ignore this until it became a problem. Congrats, it's a problem!\nFor now I'm just going to transcode it anyway. If it's a little shitter h264/mpeg4, this will make things worse :)))\" \"ntfys://tk_q7wszpsco7b8wmu0htixgwuoskxst@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+      }
+    },
+    {
+      "name": "Reset Flow Error",
+      "sourceRepo": "Community",
+      "pluginName": "resetFlowError",
+      "version": "1.0.0",
+      "id": "iF_uYQq_t",
+      "position": {
+        "x": 1020,
+        "y": 0
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Cues to Front is faststart for mkv I guess",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandCustomArguments",
+      "version": "1.0.0",
+      "id": "XJjGP0-Ao",
+      "position": {
+        "x": 720,
+        "y": 1152
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "outputArguments": "-cues_to_front 1 "
       }
     }
   ],
@@ -617,13 +644,6 @@
       "id": "RLNpk5NqR"
     },
     {
-      "source": "e_CSZogKq",
-      "sourceHandle": "1",
-      "target": "XM-dpycaX",
-      "targetHandle": null,
-      "id": "nbfcAFzHT"
-    },
-    {
       "source": "XM-dpycaX",
       "sourceHandle": "1",
       "target": "xgaVTQKSX",
@@ -715,13 +735,6 @@
       "id": "9sr3B6OXg"
     },
     {
-      "source": "KR6kUsoPS",
-      "sourceHandle": "err1",
-      "target": "3zMe3C6_2",
-      "targetHandle": null,
-      "id": "496zoP4Pm"
-    },
-    {
       "source": "oLRSeQhuk",
       "sourceHandle": "1",
       "target": "5MS73YMSd",
@@ -769,6 +782,34 @@
       "target": "tGHiaWqaX",
       "targetHandle": null,
       "id": "U_b-aQszr"
+    },
+    {
+      "source": "KR6kUsoPS",
+      "sourceHandle": "err1",
+      "target": "iF_uYQq_t",
+      "targetHandle": null,
+      "id": "nyZM_z2gI"
+    },
+    {
+      "source": "iF_uYQq_t",
+      "sourceHandle": "1",
+      "target": "3zMe3C6_2",
+      "targetHandle": null,
+      "id": "6rtebeCNs"
+    },
+    {
+      "source": "e_CSZogKq",
+      "sourceHandle": "1",
+      "target": "XJjGP0-Ao",
+      "targetHandle": null,
+      "id": "79EL1Zk31"
+    },
+    {
+      "source": "XJjGP0-Ao",
+      "sourceHandle": "1",
+      "target": "XM-dpycaX",
+      "targetHandle": null,
+      "id": "xWGuOiKxi"
     }
   ]
 }
