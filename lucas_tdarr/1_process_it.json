@@ -185,7 +185,7 @@
       "id": "_MYz-VHko",
       "position": {
         "x": 720,
-        "y": 1392
+        "y": 1404
       },
       "fpEnabled": true
     },
@@ -224,24 +224,12 @@
       "id": "IAt6DFQDN",
       "position": {
         "x": 720,
-        "y": 1548
+        "y": 1464
       },
       "fpEnabled": true,
       "inputsDB": {
         "flowId": "dDuhVb_7n"
       }
-    },
-    {
-      "name": "Replace Original File",
-      "sourceRepo": "Community",
-      "pluginName": "replaceOriginalFile",
-      "version": "1.0.0",
-      "id": "tGHiaWqaX",
-      "position": {
-        "x": 720,
-        "y": 1452
-      },
-      "fpEnabled": true
     },
     {
       "name": "Prevent tdarr from doing it own audio processing. Mine is better",
@@ -415,21 +403,6 @@
       }
     },
     {
-      "name": "Add To Skiplist",
-      "sourceRepo": "Community",
-      "pluginName": "processedAdd",
-      "version": "1.0.0",
-      "id": "fbS-1UaIy",
-      "position": {
-        "x": 720,
-        "y": 1500
-      },
-      "fpEnabled": true,
-      "inputsDB": {
-        "fileToAdd": "workingFile"
-      }
-    },
-    {
       "name": "The following logic assumes we did the bitrate lookup in step 0",
       "sourceRepo": "Community",
       "pluginName": "comment",
@@ -492,7 +465,7 @@
       },
       "fpEnabled": true,
       "inputsDB": {
-        "command": "-vv -t \"It actually happened? We couldn't find the video bitrate for a non-mkv file?\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nI left a super long comment in the flow about how I was going to ignore this until it became a problem. Congrats, it's a problem!\nFor now I'm just going to transcode it anyway. If it's a little shitter h264/mpeg4, this will make things worse :)))\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/c3bf4a89-c07e-4da7-8c8f-0bef913b5a36\""
+        "command": "-vv -t \"It actually happened? We couldn't find the video bitrate for a non-mkv file?\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nI left a super long comment in the flow about how I was going to ignore this until it became a problem. Congrats, it's a problem!\nFor now I'm just going to transcode it anyway. If it's a little shitter h264/mpeg4, this will make things worse :)))\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/{{args.userVariables.library.ntfy_topic}}\""
       }
     },
     {
@@ -693,20 +666,6 @@
       "id": "0PIqDZUDL"
     },
     {
-      "source": "tGHiaWqaX",
-      "sourceHandle": "1",
-      "target": "fbS-1UaIy",
-      "targetHandle": null,
-      "id": "aPUO6dH2K"
-    },
-    {
-      "source": "fbS-1UaIy",
-      "sourceHandle": "1",
-      "target": "IAt6DFQDN",
-      "targetHandle": null,
-      "id": "wXZAts1Us"
-    },
-    {
       "source": "2TFpei23_",
       "sourceHandle": "1",
       "target": "kV2B30z_y",
@@ -777,13 +736,6 @@
       "id": "8ImdDvVDs"
     },
     {
-      "source": "_MYz-VHko",
-      "sourceHandle": "1",
-      "target": "tGHiaWqaX",
-      "targetHandle": null,
-      "id": "U_b-aQszr"
-    },
-    {
       "source": "KR6kUsoPS",
       "sourceHandle": "err1",
       "target": "iF_uYQq_t",
@@ -810,6 +762,13 @@
       "target": "XM-dpycaX",
       "targetHandle": null,
       "id": "xWGuOiKxi"
+    },
+    {
+      "source": "_MYz-VHko",
+      "sourceHandle": "1",
+      "target": "IAt6DFQDN",
+      "targetHandle": null,
+      "id": "0JeZ4JKmm"
     }
   ]
 }
