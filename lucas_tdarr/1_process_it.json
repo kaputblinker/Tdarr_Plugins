@@ -5,6 +5,40 @@
   "tags": "",
   "flowPlugins": [
     {
+      "name": "Should we force transcode even if it makes things worse? (Av1, vp8, vp9)",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "XGOEI6QbE",
+      "position": {
+        "x": 972,
+        "y": 744
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "video",
+        "condition": "includes",
+        "valuesToMatch": "av1,vp8,vp9"
+      }
+    },
+    {
+      "name": "Use normalized stream to detect if we've done audio before",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "xj7919gCp",
+      "position": {
+        "x": 624,
+        "y": 660
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "audio",
+        "propertyToCheck": "tags.title",
+        "valuesToMatch": "norm,Norm,NORM"
+      }
+    },
+    {
       "name": "(try again) Video Bitrate is good enough?",
       "sourceRepo": "Community",
       "pluginName": "checkVideoBitrate",
@@ -50,12 +84,12 @@
       "version": "1.0.0",
       "id": "hbRF18OA0",
       "position": {
-        "x": 720,
-        "y": 852
+        "x": 888,
+        "y": 1176
       },
       "fpEnabled": true,
       "inputsDB": {
-        "outputArguments": "-filter_complex [0:{{args.variables.primary_audio_index}}]asplit=2[main_in][stereo_in];[main_in]aformat=channel_layouts=5.1,aresample=48000[main];[stereo_in]pan=stereo|c0=FL+0.7*FC+0.7*BL|c1=FR+0.7*FC+0.7*BR,loudnorm=I=-23:LRA=11:tp=-2,aresample=48000[stereo_out] -map [main] -c:a:0 libopus -b:a:0 256k -map [stereo_out] -c:a:1 libopus -b:a:1 64k -metadata:s:a:0 language={{args.variables.primary_audio_lang}} -metadata:s:a:0 title=Original_Audio_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}} -metadata:s:a:1 title=Stereo_Normalized_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}}"
+        "outputArguments": "-filter_complex [0:{{args.variables.primary_audio_index}}]asplit=2[main_in][stereo_in];[main_in]aformat=channel_layouts=5.1,aresample=48000[main];[stereo_in]pan=stereo|c0=FL+0.7*FC+0.7*BL|c1=FR+0.7*FC+0.7*BR,loudnorm=I=-16:LRA=11:tp=-2,aresample=48000[stereo_out] -map [main] -c:a:0 libopus -b:a:0 256k -map [stereo_out] -c:a:1 libopus -b:a:1 64k -metadata:s:a:0 language={{args.variables.primary_audio_lang}} -metadata:s:a:0 title=Original_Audio_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}} -metadata:s:a:1 title=Stereo_Normalized_{{args.variables.primary_audio_lang}} -metadata:s:a:1 language={{args.variables.primary_audio_lang}}"
       }
     },
     {
@@ -82,11 +116,11 @@
       "id": "iflVu1_qZ",
       "position": {
         "x": 828,
-        "y": -216
+        "y": -228
       },
       "fpEnabled": true,
       "inputsDB": {
-        "code": "\nmodule.exports = async (args) => {\n\n  TMDB_API_KEY = args.userVariables.library.tmdb_key;\n  audio_channel_precedence = [6, 8, 2, 1];\n  audio_stream_precedence = [\"truehd\", \"flac\", \"dts\", \"eac3\", \"ac3\",  \"alac\", \"wav\", \"pcm\"];\n  desired_languages = [\"eng\"];\n\n\n  // see args object data here https://github.com/HaveAGitGat/Tdarr_Plugins/blob/master/FlowPluginsTs/FlowHelpers/1.0.0/interfaces/interfaces.ts\n  // example setting flow variable: https://github.com/HaveAGitGat/Tdarr/issues/1147#issuecomment-2593348443\n  // example reading ffmpeg metadata: https://github.com/HaveAGitGat/Tdarr_Plugins/issues/737#issuecomment-2581536112\n  // example setting working file as previous working file: https://github.com/HaveAGitGat/Tdarr/issues/1106#issuecomment-2622177459\n\n  // some example file data:\n  // console.log(args.inputFileObj._id)\n  // console.log(args.inputFileObj.file_size)\n  // console.log(args.inputFileObj.ffProbeData.streams[0].codec_name)\n  // console.log(args.inputFileObj.mediaInfo.track[0].BitRate)\n\n\n  const data = args.deps.fsextra.readJsonSync(\"\".concat(args.workDir, \"/arr.json\"), { throws: false })?.data;\n  // console.log(\"Arr:\" + JSON.stringify(data));\n  var imdbId = data && data.imdbId\n    ? data.imdbId\n    : (data && data.series && data.series.imdbId\n      ? data.series.imdbId\n      : (data && data.episodes && data.episodes[0] && data.episodes[0].imdbId\n        ? data.episodes[0].imdbId\n        : null));\n\n  var tmdbData = null;\n  var orlang = null;\n\n  function getFirstOriginalLanguage(label, list) {\n    if (!Array.isArray(list)) {\n      console.log(label + \": not an array\");\n      return null;\n    }\n\n    console.log(label + \": \" + list.length + \" item(s)\");\n    for (var i = 0; i < list.length; i++) {\n      var item = list[i];\n      console.log(label + \"[\" + i + \"] = \" + JSON.stringify(item));\n\n      if (item && item.original_language) {\n        console.log(label + \"[\" + i + \"] original_language = \" + item.original_language);\n        return item.original_language;\n      }\n    }\n\n    return null;\n  }\n\n  if (imdbId) {\n    var tmdbUrl =\n      \"https://api.themoviedb.org/3/find/\" +\n      encodeURIComponent(imdbId) +\n      \"?api_key=\" +\n      TMDB_API_KEY +\n      \"&language=en-US&external_source=imdb_id\";\n\n    args.jobLog(\"IMDB ID: \" + imdbId);\n    args.jobLog(\"TMDB URL: \" + tmdbUrl);\n\n    try {\n      var tmdbResponse = await args.deps.axios.get(tmdbUrl);\n      tmdbData = tmdbResponse && tmdbResponse.data ? tmdbResponse.data : null;\n\n      args.jobLog(\"TMDB response keys: \" + (tmdbData ? Object.keys(tmdbData).join(\", \") : \"none\"));\n      args.jobLog(\"TMDB raw response: \" + JSON.stringify(tmdbData));\n    } catch (err) {\n      args.jobLog(\"TMDB lookup failed: \" + (err && err.message ? err.message : String(err)));\n    }\n  } else {\n    args.jobLog(\"No IMDB ID found in arr.json\");\n  }\n\n  if (tmdbData) {\n    orlang = getFirstOriginalLanguage(\"movie_results\", tmdbData.movie_results);\n\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_results\", tmdbData.tv_results);\n    }\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_episode_results\", tmdbData.tv_episode_results);\n    }\n    if (!orlang) {\n      orlang = getFirstOriginalLanguage(\"tv_series_results\", tmdbData.tv_series_results);\n    }\n  }\n\n  console.log(\"Resolved original language: \" + orlang);\n\n\n  alpha2ToAlpha3B = { \"aa\": \"aar\", \"ab\": \"abk\", \"ae\": \"ave\", \"af\": \"afr\", \"ak\": \"aka\", \"am\": \"amh\", \"an\": \"arg\", \"ar\": \"ara\", \"as\": \"asm\", \"av\": \"ava\", \"ay\": \"aym\", \"az\": \"aze\", \"ba\": \"bak\", \"be\": \"bel\", \"bg\": \"bul\", \"bh\": \"bih\", \"bi\": \"bis\", \"bm\": \"bam\", \"bn\": \"ben\", \"bo\": \"tib\", \"br\": \"bre\", \"bs\": \"bos\", \"ca\": \"cat\", \"ce\": \"che\", \"ch\": \"cha\", \"co\": \"cos\", \"cr\": \"cre\", \"cs\": \"cze\", \"cu\": \"chu\", \"cv\": \"chv\", \"cy\": \"wel\", \"da\": \"dan\", \"de\": \"ger\", \"dv\": \"div\", \"dz\": \"dzo\", \"ee\": \"ewe\", \"el\": \"gre\", \"en\": \"eng\", \"eo\": \"epo\", \"es\": \"spa\", \"et\": \"est\", \"eu\": \"baq\", \"fa\": \"per\", \"ff\": \"ful\", \"fi\": \"fin\", \"fj\": \"fij\", \"fo\": \"fao\", \"fr\": \"fre\", \"fy\": \"fry\", \"ga\": \"gle\", \"gd\": \"gla\", \"gl\": \"glg\", \"gn\": \"grn\", \"gu\": \"guj\", \"gv\": \"glv\", \"ha\": \"hau\", \"he\": \"heb\", \"hi\": \"hin\", \"ho\": \"hmo\", \"hr\": \"hrv\", \"ht\": \"hat\", \"hu\": \"hun\", \"hy\": \"arm\", \"hz\": \"her\", \"ia\": \"ina\", \"id\": \"ind\", \"ie\": \"ile\", \"ig\": \"ibo\", \"ii\": \"iii\", \"ik\": \"ipk\", \"io\": \"ido\", \"is\": \"ice\", \"it\": \"ita\", \"iu\": \"iku\", \"ja\": \"jpn\", \"jv\": \"jav\", \"ka\": \"geo\", \"kg\": \"kon\", \"ki\": \"kik\", \"kj\": \"kua\", \"kk\": \"kaz\", \"kl\": \"kal\", \"km\": \"khm\", \"kn\": \"kan\", \"ko\": \"kor\", \"kr\": \"kau\", \"ks\": \"kas\", \"ku\": \"kur\", \"kv\": \"kom\", \"kw\": \"cor\", \"ky\": \"kir\", \"la\": \"lat\", \"lb\": \"ltz\", \"lg\": \"lug\", \"li\": \"lim\", \"ln\": \"lin\", \"lo\": \"lao\", \"lt\": \"lit\", \"lu\": \"lub\", \"lv\": \"lav\", \"mg\": \"mlg\", \"mh\": \"mah\", \"mi\": \"mao\", \"mk\": \"mac\", \"ml\": \"mal\", \"mn\": \"mon\", \"mr\": \"mar\", \"ms\": \"may\", \"mt\": \"mlt\", \"my\": \"bur\", \"na\": \"nau\", \"nb\": \"nob\", \"nd\": \"nde\", \"ne\": \"nep\", \"ng\": \"ndo\", \"nl\": \"dut\", \"nn\": \"nno\", \"no\": \"nor\", \"nr\": \"nbl\", \"nv\": \"nav\", \"ny\": \"nya\", \"oc\": \"oci\", \"oj\": \"oji\", \"om\": \"orm\", \"or\": \"ori\", \"os\": \"oss\", \"pa\": \"pan\", \"pi\": \"pli\", \"pl\": \"pol\", \"ps\": \"pus\", \"pt\": \"por\", \"qu\": \"que\", \"rm\": \"roh\", \"rn\": \"run\", \"ro\": \"rum\", \"ru\": \"rus\", \"rw\": \"kin\", \"sa\": \"san\", \"sc\": \"srd\", \"sd\": \"snd\", \"se\": \"sme\", \"sg\": \"sag\", \"si\": \"sin\", \"sk\": \"slo\", \"sl\": \"slv\", \"sm\": \"smo\", \"sn\": \"sna\", \"so\": \"som\", \"sq\": \"alb\", \"sr\": \"srp\", \"ss\": \"ssw\", \"st\": \"sot\", \"su\": \"sun\", \"sv\": \"swe\", \"sw\": \"swa\", \"ta\": \"tam\", \"te\": \"tel\", \"tg\": \"tgk\", \"th\": \"tha\", \"ti\": \"tir\", \"tk\": \"tuk\", \"tl\": \"tgl\", \"tn\": \"tsn\", \"to\": \"ton\", \"tr\": \"tur\", \"ts\": \"tso\", \"tt\": \"tat\", \"tw\": \"twi\", \"ty\": \"tah\", \"ug\": \"uig\", \"uk\": \"ukr\", \"ur\": \"urd\", \"uz\": \"uzb\", \"ve\": \"ven\", \"vi\": \"vie\", \"vo\": \"vol\", \"wa\": \"wln\", \"wo\": \"wol\", \"xh\": \"xho\", \"yi\": \"yid\", \"yo\": \"yor\", \"za\": \"zha\", \"zh\": \"chi\", \"zu\": \"zul\" };\n  args.variables.original_language = null;\n  if (orlang !== null && alpha2ToAlpha3B[orlang]) {\n    args.variables.original_language = alpha2ToAlpha3B[orlang];\n  }\n\n  console.log(\"Original Language: \" + args.variables.original_language);\n\n  if (args.variables.original_language && !desired_languages.includes(args.variables.original_language)) {\n    desired_languages.push(args.variables.original_language);\n  }\n  const selected_audio_indices = [];\n  const selected_audio_langs = [];\n  const bestByLanguage = {};\n  const allLanguages = [];\n\n  args.inputFileObj.ffProbeData.streams.forEach((stream, index) => {\n    if (stream.codec_type !== \"audio\") return;\n\n    const language = (stream.tags?.language || \"und\").toLowerCase();\n    allLanguages.push([index, language]);\n    if (!desired_languages.includes(language)) return;\n\n\n    const codecName = (stream.codec_name || \"\").toLowerCase();\n    let codecRank = audio_stream_precedence.findIndex((c) => codecName.includes(c));\n    if (codecRank === -1) codecRank = Number.MAX_SAFE_INTEGER;\n\n    let channelRank = audio_channel_precedence.indexOf(stream.channels);\n    if (channelRank === -1) channelRank = Number.MAX_SAFE_INTEGER;\n\n    const currentBest = bestByLanguage[language];\n    const candidate = { index, codecRank, channelRank, channels: stream.channels || 0 };\n\n    if (\n      !currentBest ||\n      candidate.channels > currentBest.channels ||\n      (candidate.channels === currentBest.channels &&\n        candidate.codecRank < currentBest.codecRank)\n    ) {\n      bestByLanguage[language] = candidate;\n    }\n  });\n\n  desired_languages.forEach((language) => {\n    if (bestByLanguage[language]) {\n      selected_audio_indices.push(bestByLanguage[language].index);\n      selected_audio_langs.push(language);\n    }\n  });\n\n  if (selected_audio_indices.length == 0) {\n    args.jobLog(\"Could not find any desired languages! Using the first audio track instead.\")\n    const [index, language] = allLanguages[0];\n    selected_audio_indices.push(index);\n    selected_audio_langs.push(language)\n  }\n\n  args.variables.selected_audio_indices = selected_audio_indices;\n  args.variables.selected_audio_langs = selected_audio_langs;\n  args.jobLog(\"Selected audio indices:\" + selected_audio_indices + \"(languages \" + selected_audio_langs + \")\");\n  args.variables.primary_audio_index = selected_audio_indices[0];\n  args.variables.primary_audio_lang = selected_audio_langs[0];\n\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: args.variables.original_language ? 1 : 4,\n    variables: args.variables,\n  };\n}\n"
+        "code": "\nmodule.exports = async (args) => {\n\n    audio_channel_precedence = [6, 8, 2, 1];\n    audio_stream_precedence = [\"truehd\", \"flac\", \"dts\", \"eac3\", \"ac3\", \"alac\", \"wav\", \"pcm\"];\n    desired_languages = [\"eng\", \"spa\"];\n\n\n    // see args object data here https://github.com/HaveAGitGat/Tdarr_Plugins/blob/master/FlowPluginsTs/FlowHelpers/1.0.0/interfaces/interfaces.ts\n    // example setting flow variable: https://github.com/HaveAGitGat/Tdarr/issues/1147#issuecomment-2593348443\n    // example reading ffmpeg metadata: https://github.com/HaveAGitGat/Tdarr_Plugins/issues/737#issuecomment-2581536112\n    // example setting working file as previous working file: https://github.com/HaveAGitGat/Tdarr/issues/1106#issuecomment-2622177459\n\n    // some example file data:\n    // console.log(args.inputFileObj._id)\n    // console.log(args.inputFileObj.file_size)\n    // console.log(args.inputFileObj.ffProbeData.streams[0].codec_name)\n    // console.log(args.inputFileObj.mediaInfo.track[0].BitRate)\n\n\n    const data = args.deps.fsextra.readJsonSync(\"\".concat(args.workDir, \"/arr.json\"), { throws: false })?.data;\n    args.jobLog(\"Read arr.json: \" + JSON.stringify(data));\n    var orlang_id = data ? (\n        data.originalLanguage ? data.originalLanguage.id : (\n        data.movie ? data.movie.originalLanguage.id : (\n        data.series ? data.series.originalLanguage.id : null))) \n        : null;\n\n\n    //   function getFirstOriginalLanguage(label, list) {\n    //     if (!Array.isArray(list)) {\n    //       console.log(label + \": not an array\");\n    //       return null;\n    //     }\n\n    //     console.log(label + \": \" + list.length + \" item(s)\");\n    //     for (var i = 0; i < list.length; i++) {\n    //       var item = list[i];\n    //       console.log(label + \"[\" + i + \"] = \" + JSON.stringify(item));\n\n    //       if (item && item.original_language) {\n    //         console.log(label + \"[\" + i + \"] original_language = \" + item.original_language);\n    //         return item.original_language;\n    //       }\n    //     }\n\n    //     return null;\n    //   }\n\n    //   if (imdbId) {\n    //     var tmdbUrl =\n    //       \"https://api.themoviedb.org/3/find/\" +\n    //       encodeURIComponent(imdbId) +\n    //       \"?api_key=\" +\n    //       TMDB_API_KEY +\n    //       \"&language=en-US&external_source=imdb_id\";\n\n    //     args.jobLog(\"IMDB ID: \" + imdbId);\n    //     args.jobLog(\"TMDB URL: \" + tmdbUrl);\n\n    //     try {\n    //       var tmdbResponse = await args.deps.axios.get(tmdbUrl);\n    //       tmdbData = tmdbResponse && tmdbResponse.data ? tmdbResponse.data : null;\n\n    //       args.jobLog(\"TMDB response keys: \" + (tmdbData ? Object.keys(tmdbData).join(\", \") : \"none\"));\n    //       args.jobLog(\"TMDB raw response: \" + JSON.stringify(tmdbData));\n    //     } catch (err) {\n    //       args.jobLog(\"TMDB lookup failed: \" + (err && err.message ? err.message : String(err)));\n    //     }\n    //   } else {\n    //     args.jobLog(\"No IMDB ID found in arr.json\");\n    //   }\n\n    //   if (tmdbData) {\n    //     orlang = getFirstOriginalLanguage(\"movie_results\", tmdbData.movie_results);\n\n    //     if (!orlang) {\n    //       orlang = getFirstOriginalLanguage(\"tv_results\", tmdbData.tv_results);\n    //     }\n    //     if (!orlang) {\n    //       orlang = getFirstOriginalLanguage(\"tv_episode_results\", tmdbData.tv_episode_results);\n    //     }\n    //     if (!orlang) {\n    //       orlang = getFirstOriginalLanguage(\"tv_series_results\", tmdbData.tv_series_results);\n    //     }\n    //   }\n\n    args.jobLog(\"Found original language in arr.json: \" + orlang_id);\n\n\n    // alpha2ToAlpha3B = { \"aa\": \"aar\", \"ab\": \"abk\", \"ae\": \"ave\", \"af\": \"afr\", \"ak\": \"aka\", \"am\": \"amh\", \"an\": \"arg\", \"ar\": \"ara\", \"as\": \"asm\", \"av\": \"ava\", \"ay\": \"aym\", \"az\": \"aze\", \"ba\": \"bak\", \"be\": \"bel\", \"bg\": \"bul\", \"bh\": \"bih\", \"bi\": \"bis\", \"bm\": \"bam\", \"bn\": \"ben\", \"bo\": \"tib\", \"br\": \"bre\", \"bs\": \"bos\", \"ca\": \"cat\", \"ce\": \"che\", \"ch\": \"cha\", \"co\": \"cos\", \"cr\": \"cre\", \"cs\": \"cze\", \"cu\": \"chu\", \"cv\": \"chv\", \"cy\": \"wel\", \"da\": \"dan\", \"de\": \"ger\", \"dv\": \"div\", \"dz\": \"dzo\", \"ee\": \"ewe\", \"el\": \"gre\", \"en\": \"eng\", \"eo\": \"epo\", \"es\": \"spa\", \"et\": \"est\", \"eu\": \"baq\", \"fa\": \"per\", \"ff\": \"ful\", \"fi\": \"fin\", \"fj\": \"fij\", \"fo\": \"fao\", \"fr\": \"fre\", \"fy\": \"fry\", \"ga\": \"gle\", \"gd\": \"gla\", \"gl\": \"glg\", \"gn\": \"grn\", \"gu\": \"guj\", \"gv\": \"glv\", \"ha\": \"hau\", \"he\": \"heb\", \"hi\": \"hin\", \"ho\": \"hmo\", \"hr\": \"hrv\", \"ht\": \"hat\", \"hu\": \"hun\", \"hy\": \"arm\", \"hz\": \"her\", \"ia\": \"ina\", \"id\": \"ind\", \"ie\": \"ile\", \"ig\": \"ibo\", \"ii\": \"iii\", \"ik\": \"ipk\", \"io\": \"ido\", \"is\": \"ice\", \"it\": \"ita\", \"iu\": \"iku\", \"ja\": \"jpn\", \"jv\": \"jav\", \"ka\": \"geo\", \"kg\": \"kon\", \"ki\": \"kik\", \"kj\": \"kua\", \"kk\": \"kaz\", \"kl\": \"kal\", \"km\": \"khm\", \"kn\": \"kan\", \"ko\": \"kor\", \"kr\": \"kau\", \"ks\": \"kas\", \"ku\": \"kur\", \"kv\": \"kom\", \"kw\": \"cor\", \"ky\": \"kir\", \"la\": \"lat\", \"lb\": \"ltz\", \"lg\": \"lug\", \"li\": \"lim\", \"ln\": \"lin\", \"lo\": \"lao\", \"lt\": \"lit\", \"lu\": \"lub\", \"lv\": \"lav\", \"mg\": \"mlg\", \"mh\": \"mah\", \"mi\": \"mao\", \"mk\": \"mac\", \"ml\": \"mal\", \"mn\": \"mon\", \"mr\": \"mar\", \"ms\": \"may\", \"mt\": \"mlt\", \"my\": \"bur\", \"na\": \"nau\", \"nb\": \"nob\", \"nd\": \"nde\", \"ne\": \"nep\", \"ng\": \"ndo\", \"nl\": \"dut\", \"nn\": \"nno\", \"no\": \"nor\", \"nr\": \"nbl\", \"nv\": \"nav\", \"ny\": \"nya\", \"oc\": \"oci\", \"oj\": \"oji\", \"om\": \"orm\", \"or\": \"ori\", \"os\": \"oss\", \"pa\": \"pan\", \"pi\": \"pli\", \"pl\": \"pol\", \"ps\": \"pus\", \"pt\": \"por\", \"qu\": \"que\", \"rm\": \"roh\", \"rn\": \"run\", \"ro\": \"rum\", \"ru\": \"rus\", \"rw\": \"kin\", \"sa\": \"san\", \"sc\": \"srd\", \"sd\": \"snd\", \"se\": \"sme\", \"sg\": \"sag\", \"si\": \"sin\", \"sk\": \"slo\", \"sl\": \"slv\", \"sm\": \"smo\", \"sn\": \"sna\", \"so\": \"som\", \"sq\": \"alb\", \"sr\": \"srp\", \"ss\": \"ssw\", \"st\": \"sot\", \"su\": \"sun\", \"sv\": \"swe\", \"sw\": \"swa\", \"ta\": \"tam\", \"te\": \"tel\", \"tg\": \"tgk\", \"th\": \"tha\", \"ti\": \"tir\", \"tk\": \"tuk\", \"tl\": \"tgl\", \"tn\": \"tsn\", \"to\": \"ton\", \"tr\": \"tur\", \"ts\": \"tso\", \"tt\": \"tat\", \"tw\": \"twi\", \"ty\": \"tah\", \"ug\": \"uig\", \"uk\": \"ukr\", \"ur\": \"urd\", \"uz\": \"uzb\", \"ve\": \"ven\", \"vi\": \"vie\", \"vo\": \"vol\", \"wa\": \"wln\", \"wo\": \"wol\", \"xh\": \"xho\", \"yi\": \"yid\", \"yo\": \"yor\", \"za\": \"zha\", \"zh\": \"chi\", \"zu\": \"zul\" };\n    // from https://github.com/Radarr/Radarr/blob/develop/src/NzbDrone.Core/Languages/Language.cs which matches the Sonarr equivalent exept longer.\n    const arrIdToAlpha3B = { \"0\": null, \"1\": \"eng\", \"2\": \"fre\", \"3\": \"spa\", \"4\": \"ger\", \"5\": \"ita\", \"6\": \"dan\", \"7\": \"dut\", \"8\": \"jpn\", \"9\": \"ice\", \"10\": \"chi\", \"11\": \"rus\", \"12\": \"pol\", \"13\": \"vie\", \"14\": \"swe\", \"15\": \"nor\", \"16\": \"fin\", \"17\": \"tur\", \"18\": \"por\", \"19\": \"dut\", \"20\": \"gre\", \"21\": \"kor\", \"22\": \"hun\", \"23\": \"heb\", \"24\": \"lit\", \"25\": \"cze\", \"26\": \"ara\", \"27\": \"hin\", \"28\": \"bul\", \"29\": \"mal\", \"30\": \"ukr\", \"31\": \"slo\", \"32\": \"tha\", \"33\": \"por\", \"34\": \"spa\", \"35\": \"rum\", \"36\": \"lav\", \"37\": \"per\", \"38\": \"cat\", \"39\": \"hrv\", \"40\": \"srp\", \"41\": \"bos\", \"42\": \"est\", \"43\": \"tam\", \"44\": \"ind\", \"45\": \"mac\", \"46\": \"slv\"};\n\n    args.variables.original_language = null;\n    if (orlang_id !== null && arrIdToAlpha3B[orlang_id]) {\n        args.variables.original_language = arrIdToAlpha3B[orlang_id];\n    }\n\n    args.jobLog(\"Original Language: \" + args.variables.original_language);\n\n    if (args.variables.original_language && !desired_languages.includes(args.variables.original_language)) {\n        desired_languages.push(args.variables.original_language);\n    }\n    args.jobLog(\"Desired languages: \" + desired_languages.join(\", \"));\n    const selected_audio_indices = [];\n    const selected_audio_langs = [];\n    const bestByLanguage = {};\n    const allLanguages = [];\n\n    args.inputFileObj.ffProbeData.streams.forEach((stream, index) => {\n        if (stream.codec_type !== \"audio\") return;\n\n        const language = (stream.tags?.language || \"und\").toLowerCase();\n        allLanguages.push([index, language]);\n        if (!desired_languages.includes(language)) return;\n\n\n        const codecName = (stream.codec_name || \"\").toLowerCase();\n        let codecRank = audio_stream_precedence.findIndex((c) => codecName.includes(c));\n        if (codecRank === -1) codecRank = Number.MAX_SAFE_INTEGER;\n\n        let channelRank = audio_channel_precedence.indexOf(stream.channels);\n        if (channelRank === -1) channelRank = Number.MAX_SAFE_INTEGER;\n\n        const currentBest = bestByLanguage[language];\n        const candidate = { index, codecRank, channelRank, channels: stream.channels || 0 };\n\n        if (\n            !currentBest ||\n            candidate.channels > currentBest.channels ||\n            (candidate.channels === currentBest.channels &&\n                candidate.codecRank < currentBest.codecRank)\n        ) {\n            bestByLanguage[language] = candidate;\n        }\n    });\n\n    desired_languages.forEach((language) => {\n        if (bestByLanguage[language]) {\n            selected_audio_indices.push(bestByLanguage[language].index);\n            selected_audio_langs.push(language);\n        }\n    });\n\n    if (selected_audio_indices.length == 0) {\n        args.jobLog(\"Could not find any desired languages! Using the first audio track instead.\")\n        const [index, language] = allLanguages[0];\n        selected_audio_indices.push(index);\n        selected_audio_langs.push(language)\n    }\n\n    args.variables.selected_audio_indices = selected_audio_indices;\n    args.variables.selected_audio_langs = selected_audio_langs;\n    args.jobLog(\"Selected audio indices:\" + selected_audio_indices + \"(languages \" + selected_audio_langs + \")\");\n    args.variables.primary_audio_index = selected_audio_indices[0];\n    args.variables.primary_audio_lang = selected_audio_langs[0];\n\n    if(!args.variables.original_language) {\n        args.jobLog(\"No original language found, failing\");\n    }\n\n    return {\n        outputFileObj: args.inputFileObj,\n        outputNumber: args.variables.original_language ? 1 : 4,\n        variables: args.variables,\n    };\n}\n"
       }
     },
     {
@@ -123,8 +157,8 @@
       "version": "1.0.0",
       "id": "pF85TkNiZ",
       "position": {
-        "x": 948,
-        "y": 960
+        "x": 1104,
+        "y": 1284
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -138,8 +172,8 @@
       "version": "1.0.0",
       "id": "DHaOF-g6T",
       "position": {
-        "x": 720,
-        "y": 948
+        "x": 888,
+        "y": 1272
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -159,7 +193,8 @@
       "fpEnabled": true,
       "inputsDB": {
         "hardwareEncoding": "false",
-        "ffmpegQuality": "22"
+        "ffmpegQuality": "22",
+        "ffmpegPreset": "medium"
       }
     },
     {
@@ -185,7 +220,7 @@
       "id": "_MYz-VHko",
       "position": {
         "x": 720,
-        "y": 1404
+        "y": 1668
       },
       "fpEnabled": true
     },
@@ -224,7 +259,7 @@
       "id": "IAt6DFQDN",
       "position": {
         "x": 720,
-        "y": 1464
+        "y": 1716
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -238,8 +273,8 @@
       "version": "1.0.0",
       "id": "HzyLQyeTZ",
       "position": {
-        "x": 720,
-        "y": 768
+        "x": 888,
+        "y": 1092
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -257,7 +292,7 @@
       "id": "KTJWm501L",
       "position": {
         "x": 720,
-        "y": 1032
+        "y": 1356
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -274,8 +309,8 @@
       "version": "1.0.0",
       "id": "eIClJnWYk",
       "position": {
-        "x": 552,
-        "y": 1032
+        "x": 564,
+        "y": 1356
       },
       "fpEnabled": true
     },
@@ -311,7 +346,7 @@
       "id": "XM-dpycaX",
       "position": {
         "x": 720,
-        "y": 1224
+        "y": 1524
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -338,7 +373,7 @@
       "id": "MWhlAN6Jl",
       "position": {
         "x": 720,
-        "y": 1344
+        "y": 1620
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -353,7 +388,7 @@
       "id": "xgaVTQKSX",
       "position": {
         "x": 720,
-        "y": 1284
+        "y": 1572
       },
       "fpEnabled": true
     },
@@ -377,7 +412,7 @@
       "id": "e_CSZogKq",
       "position": {
         "x": 720,
-        "y": 1104
+        "y": 1416
       },
       "fpEnabled": true,
       "inputsDB": {
@@ -488,12 +523,180 @@
       "id": "XJjGP0-Ao",
       "position": {
         "x": 720,
-        "y": 1152
+        "y": 1464
       },
       "fpEnabled": true,
       "inputsDB": {
         "outputArguments": "-cues_to_front 1 "
       }
+    },
+    {
+      "name": "Fail if encode is estimated >75% of original",
+      "sourceRepo": "Community",
+      "pluginName": "compareFileSizeRatioLive",
+      "version": "1.0.0",
+      "id": "nMNSMBB-Q",
+      "position": {
+        "x": 1032,
+        "y": 852
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "thresholdPerc": "75",
+        "checkDelaySeconds": "{{args.variables.transcodeFailoutTime}}"
+      }
+    },
+    {
+      "name": "On Flow Error",
+      "sourceRepo": "Community",
+      "pluginName": "onFlowError",
+      "version": "1.0.0",
+      "id": "_L7tNC649",
+      "position": {
+        "x": 444,
+        "y": 324
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Failed bc of bad compression?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFlowVariable",
+      "version": "1.0.0",
+      "id": "GXSXqDJ34",
+      "position": {
+        "x": 444,
+        "y": 372
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "variable": "args.variables.liveSizeCompare.error",
+        "value": "true"
+      }
+    },
+    {
+      "name": "Compression was going poorly (looking at you, Avatar not Airbender) so lets skip it",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "55zRb_eBN",
+      "position": {
+        "x": 372,
+        "y": 456
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Reset Flow Error",
+      "sourceRepo": "Community",
+      "pluginName": "resetFlowError",
+      "version": "1.0.0",
+      "id": "nEr4qPmPQ",
+      "position": {
+        "x": 372,
+        "y": 540
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Begin Command",
+      "sourceRepo": "Community",
+      "pluginName": "ffmpegCommandStart",
+      "version": "1.0.0",
+      "id": "j3hY3e9ll",
+      "position": {
+        "x": 648,
+        "y": 756
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Disable live ratio check",
+      "sourceRepo": "Community",
+      "pluginName": "compareFileSizeRatioLive",
+      "version": "1.0.0",
+      "id": "gsqMjVgs4",
+      "position": {
+        "x": 372,
+        "y": 588
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "thresholdPerc": "120",
+        "checkDelaySeconds": "",
+        "enabled": "false"
+      }
+    },
+    {
+      "name": "Sum ting wong",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "I2XzUiC8R",
+      "position": {
+        "x": 528,
+        "y": 480
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Has an opus stream?",
+      "sourceRepo": "Community",
+      "pluginName": "checkAudioCodec",
+      "version": "1.0.0",
+      "id": "FBXk-Mv1-",
+      "position": {
+        "x": 780,
+        "y": 936
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "codec": "opus",
+        "checkBitrate": "false",
+        "lessThan": "300000",
+        "greaterThan": "40000"
+      }
+    },
+    {
+      "name": "Has a normalized audio stream?",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "dnkRkWgRr",
+      "position": {
+        "x": 720,
+        "y": 1008
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "audio",
+        "propertyToCheck": "tags.title",
+        "valuesToMatch": "norm,Norm,NORM"
+      }
+    },
+    {
+      "name": "Assume we've already processed audio on this bad boy, and just copy it over.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "GwU0wCui4",
+      "position": {
+        "x": 696,
+        "y": 1092
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Skip processing on this already-transcoded file.\n\nIt's sufficiently rare that something has a \"normalized\" stream that I'm using this as an indicator that this file has already been transcoded by us. This means audio is in a good state and extra data removed, we're almost certainly only re-running this file because I lowered the bitrate thresholds and wanted to re-queue some stuff. Since it's not worth compressing, we can skip without transcode work. ",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "KeBlzOrhe",
+      "position": {
+        "x": 480,
+        "y": 768
+      },
+      "fpEnabled": true
     }
   ],
   "flowEdges": [
@@ -561,25 +764,11 @@
       "id": "gXaWkBNKU"
     },
     {
-      "source": "IgJ_RMD2A",
-      "sourceHandle": "1",
-      "target": "HzyLQyeTZ",
-      "targetHandle": null,
-      "id": "FkVgVQnBG"
-    },
-    {
       "source": "KR6kUsoPS",
       "sourceHandle": "2",
       "target": "vMYvmGCY5",
       "targetHandle": null,
       "id": "DDd_kgtbr"
-    },
-    {
-      "source": "Z4cNMRrxX",
-      "sourceHandle": "1",
-      "target": "HzyLQyeTZ",
-      "targetHandle": null,
-      "id": "a9pjDGfM1"
     },
     {
       "source": "vMYvmGCY5",
@@ -657,13 +846,6 @@
       "target": "bRVUz1e1A",
       "targetHandle": null,
       "id": "KtjiX5Tjd"
-    },
-    {
-      "source": "bRVUz1e1A",
-      "sourceHandle": "1",
-      "target": "HzyLQyeTZ",
-      "targetHandle": null,
-      "id": "0PIqDZUDL"
     },
     {
       "source": "2TFpei23_",
@@ -769,6 +951,146 @@
       "target": "IAt6DFQDN",
       "targetHandle": null,
       "id": "0JeZ4JKmm"
+    },
+    {
+      "source": "_L7tNC649",
+      "sourceHandle": "1",
+      "target": "GXSXqDJ34",
+      "targetHandle": null,
+      "id": "4Y0UcAYIe"
+    },
+    {
+      "source": "GXSXqDJ34",
+      "sourceHandle": "2",
+      "target": "I2XzUiC8R",
+      "targetHandle": null,
+      "id": "TQY1xkkLi"
+    },
+    {
+      "source": "GXSXqDJ34",
+      "sourceHandle": "1",
+      "target": "55zRb_eBN",
+      "targetHandle": null,
+      "id": "0uO-3hF7f"
+    },
+    {
+      "source": "nMNSMBB-Q",
+      "sourceHandle": "1",
+      "target": "FBXk-Mv1-",
+      "targetHandle": null,
+      "id": "G-KWGC5cW"
+    },
+    {
+      "source": "FBXk-Mv1-",
+      "sourceHandle": "1",
+      "target": "dnkRkWgRr",
+      "targetHandle": null,
+      "id": "rpm1RB_vm"
+    },
+    {
+      "source": "FBXk-Mv1-",
+      "sourceHandle": "2",
+      "target": "HzyLQyeTZ",
+      "targetHandle": null,
+      "id": "bMAfsbbTq"
+    },
+    {
+      "source": "dnkRkWgRr",
+      "sourceHandle": "2",
+      "target": "HzyLQyeTZ",
+      "targetHandle": null,
+      "id": "irW9_WuNI"
+    },
+    {
+      "source": "dnkRkWgRr",
+      "sourceHandle": "1",
+      "target": "GwU0wCui4",
+      "targetHandle": null,
+      "id": "-p_VjXliJ"
+    },
+    {
+      "source": "GwU0wCui4",
+      "sourceHandle": "1",
+      "target": "KTJWm501L",
+      "targetHandle": null,
+      "id": "yTQeRhKYh"
+    },
+    {
+      "source": "xj7919gCp",
+      "sourceHandle": "1",
+      "target": "KeBlzOrhe",
+      "targetHandle": null,
+      "id": "BaRtTAS8k"
+    },
+    {
+      "source": "55zRb_eBN",
+      "sourceHandle": "1",
+      "target": "nEr4qPmPQ",
+      "targetHandle": null,
+      "id": "yo_tBDYWL"
+    },
+    {
+      "source": "xj7919gCp",
+      "sourceHandle": "2",
+      "target": "j3hY3e9ll",
+      "targetHandle": null,
+      "id": "F_83xiUeR"
+    },
+    {
+      "source": "Z4cNMRrxX",
+      "sourceHandle": "1",
+      "target": "xj7919gCp",
+      "targetHandle": null,
+      "id": "EmfTUBUyv"
+    },
+    {
+      "source": "bRVUz1e1A",
+      "sourceHandle": "1",
+      "target": "xj7919gCp",
+      "targetHandle": null,
+      "id": "Cz6CFo_gf"
+    },
+    {
+      "source": "IgJ_RMD2A",
+      "sourceHandle": "1",
+      "target": "XGOEI6QbE",
+      "targetHandle": null,
+      "id": "jKh8TGmCo"
+    },
+    {
+      "source": "XGOEI6QbE",
+      "sourceHandle": "1",
+      "target": "FBXk-Mv1-",
+      "targetHandle": null,
+      "id": "INuBo7GPM"
+    },
+    {
+      "source": "XGOEI6QbE",
+      "sourceHandle": "2",
+      "target": "nMNSMBB-Q",
+      "targetHandle": null,
+      "id": "5MLJS0O2z"
+    },
+    {
+      "source": "nEr4qPmPQ",
+      "sourceHandle": "1",
+      "target": "gsqMjVgs4",
+      "targetHandle": null,
+      "id": "uzLYURFp9"
+    },
+    {
+      "source": "gsqMjVgs4",
+      "sourceHandle": "1",
+      "target": "xj7919gCp",
+      "targetHandle": null,
+      "id": "a8NkVfaqY"
+    },
+    {
+      "source": "j3hY3e9ll",
+      "sourceHandle": "1",
+      "target": "FBXk-Mv1-",
+      "targetHandle": null,
+      "id": "j9e5SrFny"
     }
   ]
 }

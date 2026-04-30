@@ -46,11 +46,11 @@ const details = (): IpluginDetails => ({
         type: 'text',
       },
       tooltip: 'Input your arr host here.'
-      + '\\nExample:\\n'
-      + 'http://192.168.1.1:7878\\n'
-      + 'http://192.168.1.1:8989\\n'
-      + 'https://radarr.domain.com\\n'
-      + 'https://sonarr.domain.com\\n',
+        + '\\nExample:\\n'
+        + 'http://192.168.1.1:7878\\n'
+        + 'http://192.168.1.1:8989\\n'
+        + 'https://radarr.domain.com\\n'
+        + 'https://sonarr.domain.com\\n',
     },
   ],
   outputs: [
@@ -106,9 +106,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog('Movie info from Radarr:');
       args.jobLog(JSON.stringify(res.data));
 
-      arrInfo.originalPath = res.data.movieFile.path ? res.data.movieFile.path : args.originalLibraryFile._id;
-      arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
-      arrInfo.sceneName = res.data.movieFile.sceneName;
+      // arrInfo.originalPath = res.data.movieFile.path ? res.data.movieFile.path : args.originalLibraryFile._id;
+      // arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
+      // arrInfo.sceneName = res.data.movieFile.sceneName;
       arrInfo.data = res.data;
 
       args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
@@ -140,9 +140,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog('Episode info from Sonarr:');
       args.jobLog(JSON.stringify(res.data));
 
-      arrInfo.originalPath = res.data.episodeFile.path ? res.data.episodeFile.path : args.originalLibraryFile._id;
-      arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
-      arrInfo.sceneName = res.data.episodeFile.sceneName;
+      // arrInfo.originalPath = res.data.episodeFile.path ? res.data.episodeFile.path : args.originalLibraryFile._id;
+      // arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
+      // arrInfo.sceneName = res.data.episodeFile.sceneName;
       arrInfo.data = res.data;
       args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
     } catch (error) {
