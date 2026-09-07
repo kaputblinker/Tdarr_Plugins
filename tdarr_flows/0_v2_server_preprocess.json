@@ -1,0 +1,524 @@
+{
+  "_id": "iCMlO-kCn",
+  "name": "0: Server Preprocess",
+  "description": "0: Server Preprocess",
+  "tags": "",
+  "flowPlugins": [
+    {
+      "name": "Parse file with Sonarr ",
+      "sourceRepo": "Community",
+      "pluginName": "parseFileWithRadarrOrSonarr",
+      "version": "1.0.0",
+      "id": "t9YdcXW2z",
+      "position": {
+        "x": 720,
+        "y": 408
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "arr_host": "http://{{args.variables.serverIP}}:8989",
+        "arr_api_key": "{{args.userVariables.library.sonarr_key}}",
+        "arr": "sonarr"
+      }
+    },
+    {
+      "name": "Is in movie dir?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFileNameIncludes",
+      "version": "2.0.0",
+      "id": "9MTU1badM",
+      "position": {
+        "x": 696,
+        "y": 336
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileToCheck": "originalFile",
+        "includeFileDirectory": "true",
+        "terms": "/movies/"
+      }
+    },
+    {
+      "name": "Check Skiplist",
+      "sourceRepo": "Community",
+      "pluginName": "processedCheck",
+      "version": "1.0.0",
+      "id": "57QZ5cTVX",
+      "position": {
+        "x": 672,
+        "y": 0
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Ignore already-processed files.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "bucslCqDd",
+      "position": {
+        "x": 864,
+        "y": 72
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "it's go time",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "uw8I3v--b",
+      "position": {
+        "x": 648,
+        "y": 516
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Go To Processing Flow",
+      "sourceRepo": "Community",
+      "pluginName": "goToFlow",
+      "version": "2.0.0",
+      "id": "pNJn-OPOP",
+      "position": {
+        "x": 648,
+        "y": 576
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "flowId": "P_38Tbyi9"
+      }
+    },
+    {
+      "name": "Parse file with Radarr ",
+      "sourceRepo": "Community",
+      "pluginName": "parseFileWithRadarrOrSonarr",
+      "version": "1.0.0",
+      "id": "DzlSWYKuj",
+      "position": {
+        "x": 564,
+        "y": 408
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "arr_host": "http://{{args.variables.serverIP}}:7878",
+        "arr_api_key": "{{args.userVariables.library.radarr_key}}"
+      }
+    },
+    {
+      "name": "Lookup target bitrate for resolution",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "Qb3DSpeol",
+      "position": {
+        "x": 672,
+        "y": 60
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "module.exports = async (args) => {\n    // Use the caller-provided normalized resolution label directly.\n    const resolutionLabel = String(args.inputFileObj?.video_resolution || '').trim();\n\n    if (!resolutionLabel) {\n        throw new Error('Missing args.inputFileObj.video_resolution');\n    }\n\n    // Derived via a combination of me looking at past results and me making stuff up.\n    // These are somewhat generous to try and make sure that even more visually complex stuff, will be around this.\n    // There are ofc very complex exceptions that get transcoded for very little benefit. Mainly Avatar 3. That thing is bananas.\n    const bitrateLookupKbps = {\n        '480p': 900,\n        '576p': 1200,\n        '720p': 2000,\n        '1080p': 3100,\n        '1440p': 5000,\n        '4KUHD': 7500,\n        'DCI4K': 10000,\n        '8KUHD': 12500\n    };\n\n    const targetBitrateKbps = bitrateLookupKbps[resolutionLabel];\n\n    if (!targetBitrateKbps) {\n        const valid = Object.keys(bitrateLookupKbps).join(', ');\n        throw new Error(\n            'Unsupported video_resolution \"' +\n            resolutionLabel +\n            '\". Expected one of: ' +\n            valid\n        );\n    }\n\n    const transcodeFailoutTime = {\n        '480p': 60,\n        '576p': 60,\n        '720p': 100,\n        '1080p': 200,\n        '1440p': 200,\n        '4KUHD': 240,\n        'DCI4K': 240,\n        '8KUHD': 240\n    }; // I love that the live transcode plugin delay is based on real time instead of video time!\n    \n    // Set flow variables for downstream steps.\n    args.variables = args.variables || {};\n    args.variables.targetBitrateKbps = targetBitrateKbps;\n    // We want the threshold to be aggressive. If it can't be compressed very well, this will be detected during transcode\n    args.variables.videoTranscodeThresholdKps = targetBitrateKbps * 0.8; \n    args.variables.overallBitrateThresholdKps = targetBitrateKbps * 0.9;\n    args.variables.maxBitrate4x = String(targetBitrateKbps * 4) + 'k';\n    args.variables.maxBitrate8x = String(targetBitrateKbps * 8) + 'k';\n    args.variables.transcodeFailoutTime = transcodeFailoutTime[resolutionLabel];\n\n    args.jobLog(\n        'lookupMaxBitrate: resolution=' +\n        resolutionLabel +\n        ', target=' +\n        targetBitrateKbps +\n        'k, threshold=' +\n        args.variables.videoTranscodeThresholdKps +\n        'k, max4x=' +\n        args.variables.maxBitrate4x +\n        'k, max8x=' +\n        args.variables.maxBitrate8x +\n        'k, failoutTime=' +\n        args.variables.transcodeFailoutTime\n    );\n\n    return {\n        outputFileObj: args.inputFileObj,\n        outputNumber: 1,\n        variables: args.variables\n    };\n};"
+      }
+    },
+    {
+      "name": "Check overall bitrate is \"good enough\"",
+      "sourceRepo": "Community",
+      "pluginName": "checkOverallBitrate",
+      "version": "1.0.0",
+      "id": "yaapr76LM",
+      "position": {
+        "x": 672,
+        "y": 168
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "lessThan": "{{args.variables.overallBitrateThresholdKps}}"
+      }
+    },
+    {
+      "name": "Good enough!",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "LYs51mCkn",
+      "position": {
+        "x": 384,
+        "y": 348
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Add To Skiplist",
+      "sourceRepo": "Community",
+      "pluginName": "processedAdd",
+      "version": "1.0.0",
+      "id": "0r3aVju98",
+      "position": {
+        "x": 384,
+        "y": 396
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "This shit no worky",
+      "sourceRepo": "Community",
+      "pluginName": "apprise",
+      "version": "1.0.0",
+      "id": "PLcCRlo7L",
+      "position": {
+        "x": 900,
+        "y": 468
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "command": "-vv -t \"Tdarr can't contact rdarr/sonarr and is mad about it\" -b \"File {{{args.inputFileObj._id}}}.\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/{{args.userVariables.library.ntfy_topic}}\""
+      }
+    },
+    {
+      "name": "Fail Flow",
+      "sourceRepo": "Community",
+      "pluginName": "failFlow",
+      "version": "1.0.0",
+      "id": "JRq0z6QFZ",
+      "position": {
+        "x": 900,
+        "y": 528
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Extract Server Host bc tdarr is stupid and \"ServerIP\" isn't populated",
+      "sourceRepo": "Community",
+      "pluginName": "customFunction",
+      "version": "1.0.0",
+      "id": "FnG4toRN7",
+      "position": {
+        "x": 672,
+        "y": -84
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "code": "\nmodule.exports = async (args) => {\n\n  url = new URL(args.configVars.config.serverURL);\n  args.variables.serverIP = url.hostname;\n\n\n// do something here\n\n  return {\n    outputFileObj: args.inputFileObj,\n    outputNumber: 1,\n    variables: args.variables,\n  };\n}\n      "
+      }
+    },
+    {
+      "name": "Input File",
+      "sourceRepo": "Community",
+      "pluginName": "inputFile",
+      "version": "1.0.0",
+      "id": "vIiR3axQZ",
+      "position": {
+        "x": 672,
+        "y": -288
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "fileAccessChecks": "true",
+        "pauseNodeIfAccessChecksFail": "true"
+      }
+    },
+    {
+      "name": "Has Normalized Audio Stream?",
+      "sourceRepo": "Community",
+      "pluginName": "checkStreamProperty",
+      "version": "1.0.0",
+      "id": "6CRW9T_75",
+      "position": {
+        "x": 672,
+        "y": 264
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "streamType": "audio",
+        "valuesToMatch": "norm,Norm,NORM",
+        "propertyToCheck": "tags.title"
+      }
+    },
+    {
+      "name": "Use \"GPU\" as the tag that means \"Server\" because normal tags are a pro feature and I don't do GPU transcodes",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "aChUml80o",
+      "position": {
+        "x": 672,
+        "y": -252
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Tags: Worker Type",
+      "sourceRepo": "Community",
+      "pluginName": "tagsWorkerType",
+      "version": "1.0.0",
+      "id": "65-WsYFAv",
+      "position": {
+        "x": 672,
+        "y": -144
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "requiredWorkerType": "GPU"
+      }
+    },
+    {
+      "name": "Check Video Bitrate is \"good enough\"",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoBitrate",
+      "version": "1.0.0",
+      "id": "kBo5AJdhB",
+      "position": {
+        "x": 924,
+        "y": 180
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Run MKVPropEdit",
+      "sourceRepo": "Community",
+      "pluginName": "runMkvPropEdit",
+      "version": "1.0.0",
+      "id": "oLRSeQhuk",
+      "position": {
+        "x": 948,
+        "y": 108
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "MKVPropEdit is great for guaranteeing the following \"Video Bitrate is good enough?\" check won't fail.\nMediaInfo always works to calculate bitrates but tdarr doesn't let you use that with the Check Video Bitrate plugin. So you need to A) use mediainfo and exiftool to emulate what MKVPropEdit does, or B) replace the bitrate check plugin with a custom or edited version.\nIDK How often mp4 and avi are missing bitrate metadata so I choose to ignore this problem until it becomes a problem. Then I'll probably choose B so I can remove this MKVPropEdit call entirely.",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "ZNv-hHS1H",
+      "position": {
+        "x": 1284,
+        "y": 96
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Is .mkv?",
+      "sourceRepo": "Community",
+      "pluginName": "checkFileExtension",
+      "version": "1.0.0",
+      "id": "3zMe3C6_2",
+      "position": {
+        "x": 1020,
+        "y": 36
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "extensions": "mkv"
+      }
+    },
+    {
+      "name": "JUST DO IT",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "1jl4_DtLY",
+      "position": {
+        "x": 1116,
+        "y": 156
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "Haha you have to fix this now",
+      "sourceRepo": "Community",
+      "pluginName": "apprise",
+      "version": "1.0.0",
+      "id": "GFmTldxWM",
+      "position": {
+        "x": 1116,
+        "y": 108
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "command": "-vv -t \"It actually happened? We couldn't find the video bitrate for a non-mkv file?\" -b \"File {{{args.inputFileObj._id}}}\nOld size: {{{args.originalLibraryFile.oldSize}}} GB.\nI left a super long comment in the flow about how I was going to ignore this until it became a problem. Congrats, it's a problem!\nFor now I'm just going to transcode it anyway. If it's a little shitter h264/mpeg4, this will make things worse :)))\" \"ntfys://{{args.userVariables.library.ntfy_key}}@ntfy.sh/{{args.userVariables.library.ntfy_topic}}\""
+      }
+    },
+    {
+      "name": "Reset Flow Error",
+      "sourceRepo": "Community",
+      "pluginName": "resetFlowError",
+      "version": "1.0.0",
+      "id": "iF_uYQq_t",
+      "position": {
+        "x": 1020,
+        "y": 0
+      },
+      "fpEnabled": true
+    },
+    {
+      "name": "(try again) Video Bitrate is good enough?",
+      "sourceRepo": "Community",
+      "pluginName": "checkVideoBitrate",
+      "version": "1.0.0",
+      "id": "5MS73YMSd",
+      "position": {
+        "x": 948,
+        "y": 144
+      },
+      "fpEnabled": true,
+      "inputsDB": {
+        "lessThan": "{{args.variables.videoTranscodeThresholdKps}}"
+      }
+    },
+    {
+      "name": "Trying to transcode these crummy codecs at such a low bitrate will kinda just make things worse",
+      "sourceRepo": "Community",
+      "pluginName": "comment",
+      "version": "1.0.0",
+      "id": "bRVUz1e1A",
+      "position": {
+        "x": 792,
+        "y": 408
+      },
+      "fpEnabled": true
+    }
+  ],
+  "flowEdges": [
+    {
+      "source": "uw8I3v--b",
+      "sourceHandle": "1",
+      "target": "pNJn-OPOP",
+      "targetHandle": null,
+      "id": "8gA43abXF"
+    },
+    {
+      "source": "9MTU1badM",
+      "sourceHandle": "1",
+      "target": "DzlSWYKuj",
+      "targetHandle": null,
+      "id": "NYHJ175VV"
+    },
+    {
+      "source": "57QZ5cTVX",
+      "sourceHandle": "1",
+      "target": "Qb3DSpeol",
+      "targetHandle": null,
+      "id": "_5QNAm2To"
+    },
+    {
+      "source": "Qb3DSpeol",
+      "sourceHandle": "1",
+      "target": "yaapr76LM",
+      "targetHandle": null,
+      "id": "v4vxtiuDP"
+    },
+    {
+      "source": "yaapr76LM",
+      "sourceHandle": "2",
+      "target": "9MTU1badM",
+      "targetHandle": null,
+      "id": "bYQgbd6ir"
+    },
+    {
+      "source": "PLcCRlo7L",
+      "sourceHandle": "1",
+      "target": "JRq0z6QFZ",
+      "targetHandle": null,
+      "id": "tgAuSZCE-"
+    },
+    {
+      "source": "FnG4toRN7",
+      "sourceHandle": "1",
+      "target": "57QZ5cTVX",
+      "targetHandle": null,
+      "id": "H8hFOUi5j"
+    },
+    {
+      "source": "LYs51mCkn",
+      "sourceHandle": "1",
+      "target": "0r3aVju98",
+      "targetHandle": null,
+      "id": "Rb5PIFqdQ"
+    },
+    {
+      "source": "6CRW9T_75",
+      "sourceHandle": "2",
+      "target": "9MTU1badM",
+      "targetHandle": null,
+      "id": "4B_5zQSHV"
+    },
+    {
+      "source": "6CRW9T_75",
+      "sourceHandle": "1",
+      "target": "LYs51mCkn",
+      "targetHandle": null,
+      "id": "X5cdtdfgM"
+    },
+    {
+      "source": "9MTU1badM",
+      "sourceHandle": "2",
+      "target": "t9YdcXW2z",
+      "targetHandle": null,
+      "id": "gHmN6AAkX"
+    },
+    {
+      "source": "DzlSWYKuj",
+      "sourceHandle": "err1",
+      "target": "PLcCRlo7L",
+      "targetHandle": null,
+      "id": "uCfOJf97p"
+    },
+    {
+      "source": "t9YdcXW2z",
+      "sourceHandle": "err1",
+      "target": "PLcCRlo7L",
+      "targetHandle": null,
+      "id": "czmu2O0Si"
+    },
+    {
+      "source": "DzlSWYKuj",
+      "sourceHandle": "1",
+      "target": "uw8I3v--b",
+      "targetHandle": null,
+      "id": "-XepOx8BO"
+    },
+    {
+      "source": "t9YdcXW2z",
+      "sourceHandle": "1",
+      "target": "uw8I3v--b",
+      "targetHandle": null,
+      "id": "cbFgmRWML"
+    },
+    {
+      "source": "yaapr76LM",
+      "sourceHandle": "1",
+      "target": "6CRW9T_75",
+      "targetHandle": null,
+      "id": "WrQNjNgpV"
+    },
+    {
+      "source": "57QZ5cTVX",
+      "sourceHandle": "2",
+      "target": "bucslCqDd",
+      "targetHandle": null,
+      "id": "ExWwdw-RV"
+    },
+    {
+      "source": "vIiR3axQZ",
+      "sourceHandle": "1",
+      "target": "aChUml80o",
+      "targetHandle": null,
+      "id": "WEUjBkmEm"
+    },
+    {
+      "source": "aChUml80o",
+      "sourceHandle": "1",
+      "target": "65-WsYFAv",
+      "targetHandle": null,
+      "id": "MYu6RnSU_"
+    },
+    {
+      "source": "65-WsYFAv",
+      "sourceHandle": "1",
+      "target": "FnG4toRN7",
+      "targetHandle": null,
+      "id": "U2kvDlE48"
+    }
+  ]
+}

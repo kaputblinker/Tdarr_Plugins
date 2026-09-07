@@ -27,6 +27,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:0'],
             },
             {
@@ -38,6 +39,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:1'],
             },
           ],
@@ -61,14 +63,15 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.outputFileObj).toBe(baseArgs.inputFileObj);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toContain('-vf');
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
+      expect(result.variables.ffmpegCommand.streams[0].filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
+      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([]);
     });
 
     it('should not modify audio streams', () => {
       const result = plugin(baseArgs);
 
       expect(result.variables.ffmpegCommand.streams[1].outputArgs).toEqual([]);
+      expect(result.variables.ffmpegCommand.streams[1].filters).toEqual([]);
     });
 
     it('should preserve original stream structure', () => {
@@ -96,6 +99,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         mapArgs: ['-map', '0:2'],
       });
     });
@@ -112,8 +116,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
       expect(result.variables.ffmpegCommand.streams[2].codec_name).toBe('h265');
 
       videoStreams.forEach((stream) => {
-        expect(stream.outputArgs).toContain('-vf');
-        expect(stream.outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
+        expect(stream.filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
       });
     });
   });
@@ -131,6 +134,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:0'],
         },
         {
@@ -142,6 +146,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:1'],
         },
         {
@@ -152,6 +157,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:2'],
         },
         {
@@ -164,6 +170,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:3'],
         },
       ];
@@ -172,10 +179,10 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
     it('should only process video streams', () => {
       const result = plugin(baseArgs);
 
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
-      expect(result.variables.ffmpegCommand.streams[1].outputArgs).toEqual([]);
-      expect(result.variables.ffmpegCommand.streams[2].outputArgs).toEqual([]);
-      expect(result.variables.ffmpegCommand.streams[3].outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
+      expect(result.variables.ffmpegCommand.streams[0].filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
+      expect(result.variables.ffmpegCommand.streams[1].filters).toEqual([]);
+      expect(result.variables.ffmpegCommand.streams[2].filters).toEqual([]);
+      expect(result.variables.ffmpegCommand.streams[3].filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
     });
 
     it('should handle streams with existing output args', () => {
@@ -184,7 +191,10 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
       const result = plugin(baseArgs);
 
       expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([
-        '-c:v', 'libx264', '-preset', 'fast', '-vf', 'zscale=t=linear:npl=100,format=yuv420p',
+        '-c:v', 'libx264', '-preset', 'fast',
+      ]);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual([
+        'zscale=t=linear:npl=100,format=yuv420p',
       ]);
     });
   });
@@ -228,6 +238,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         mapArgs: ['-map', `0:${stream.index}`],
       }));
 
@@ -239,8 +250,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
 
       expect(videoStreams.length).toBeGreaterThan(0);
       videoStreams.forEach((stream) => {
-        expect(stream.outputArgs).toContain('-vf');
-        expect(stream.outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
+        expect(stream.filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
       });
     });
 
@@ -254,6 +264,7 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         mapArgs: ['-map', `0:${stream.index}`],
       }));
 
@@ -265,26 +276,28 @@ describe('ffmpegCommandHdrToSdr Plugin', () => {
 
       expect(videoStreams.length).toBeGreaterThan(0);
       videoStreams.forEach((stream) => {
-        expect(stream.outputArgs).toContain('-vf');
-        expect(stream.outputArgs).toContain('zscale=t=linear:npl=100,format=yuv420p');
+        expect(stream.filters).toContain('zscale=t=linear:npl=100,format=yuv420p');
       });
     });
   });
 
   describe('Filter Appending', () => {
-    it('should handle existing output args correctly', () => {
-      // Test with existing video filter
-      baseArgs.variables.ffmpegCommand.streams[0].outputArgs = ['-vf', 'scale=1280:720'];
+    it('should stack onto existing filters and leave output args alone', () => {
+      // Test with an existing filter in the stack
+      baseArgs.variables.ffmpegCommand.streams[0].filters = ['scale=1280:720'];
       let result = plugin(baseArgs);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([
-        '-vf', 'scale=1280:720', '-vf', 'zscale=t=linear:npl=100,format=yuv420p',
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual([
+        'scale=1280:720', 'zscale=t=linear:npl=100,format=yuv420p',
       ]);
+      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([]);
 
       // Reset and test with non-filter args
+      baseArgs.variables.ffmpegCommand.streams[0].filters = [];
       baseArgs.variables.ffmpegCommand.streams[0].outputArgs = ['-c:v', 'libx264'];
       result = plugin(baseArgs);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([
-        '-c:v', 'libx264', '-vf', 'zscale=t=linear:npl=100,format=yuv420p',
+      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-c:v', 'libx264']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual([
+        'zscale=t=linear:npl=100,format=yuv420p',
       ]);
     });
   });

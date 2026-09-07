@@ -45,30 +45,30 @@ const details = () :IpluginDetails => ({
   ],
 });
 
-const getVfScale = (
+const getScaleFilter = (
   targetResolution: string,
-):string[] => {
+):string => {
   switch (targetResolution) {
     case '480p':
-      return ['-vf', 'scale=720:-2'];
+      return 'scale=720:-2';
 
     case '576p':
-      return ['-vf', 'scale=720:-2'];
+      return 'scale=720:-2';
 
     case '720p':
-      return ['-vf', 'scale=1280:-2'];
+      return 'scale=1280:-2';
 
     case '1080p':
-      return ['-vf', 'scale=1920:-2'];
+      return 'scale=1920:-2';
 
     case '1440p':
-      return ['-vf', 'scale=2560:-2'];
+      return 'scale=2560:-2';
 
     case '4KUHD':
-      return ['-vf', 'scale=3840:-2'];
+      return 'scale=3840:-2';
 
     default:
-      return ['-vf', 'scale=1920:-2'];
+      return 'scale=1920:-2';
   }
 };
 
@@ -91,8 +91,7 @@ const plugin = (args:IpluginInputArgs):IpluginOutputArgs => {
       ) {
         // eslint-disable-next-line no-param-reassign
         args.variables.ffmpegCommand.shouldProcess = true;
-        const scaleArgs = getVfScale(targetResolution);
-        stream.outputArgs.push(...scaleArgs);
+        stream.filters.push(getScaleFilter(targetResolution));
       }
     }
   }

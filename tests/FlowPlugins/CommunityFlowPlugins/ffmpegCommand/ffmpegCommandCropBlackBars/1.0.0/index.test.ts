@@ -48,6 +48,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
               mapArgs: ['-map', '0:0'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 1,
@@ -58,6 +59,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
               mapArgs: ['-map', '0:1'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
           ],
           container: 'mp4',
@@ -158,8 +160,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
 
       const videoStream = result.variables.ffmpegCommand.streams[0];
-      expect(videoStream.outputArgs).toContain('-vf');
-      expect(videoStream.outputArgs).toContain('crop=1920:800:0:140');
+      expect(videoStream.filters).toContain('crop=1920:800:0:140');
     });
 
     it('should detect and crop pillarbox black bars (left/right)', () => {
@@ -172,7 +173,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
 
       const videoStream = result.variables.ffmpegCommand.streams[0];
-      expect(videoStream.outputArgs).toContain('crop=1440:1080:240:0');
+      expect(videoStream.filters).toContain('crop=1440:1080:240:0');
     });
 
     it('should not crop when no black bars detected', () => {
@@ -212,7 +213,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
 
       const videoStream = result.variables.ffmpegCommand.streams[0];
-      expect(videoStream.outputArgs).toContain('crop=1920:800:0:140');
+      expect(videoStream.filters).toContain('crop=1920:800:0:140');
     });
 
     it('should use minimum crop (least aggressive) when cropMode is minimum', () => {
@@ -232,7 +233,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
 
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
       const videoStream = result.variables.ffmpegCommand.streams[0];
-      expect(videoStream.outputArgs).toContain('crop=1920:900:0:90');
+      expect(videoStream.filters).toContain('crop=1920:900:0:90');
     });
 
     it('should use maximum crop (most aggressive) when cropMode is maximum', () => {
@@ -252,7 +253,7 @@ describe('ffmpegCommandCropBlackBars Plugin', () => {
 
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
       const videoStream = result.variables.ffmpegCommand.streams[0];
-      expect(videoStream.outputArgs).toContain('crop=1920:800:0:140');
+      expect(videoStream.filters).toContain('crop=1920:800:0:140');
     });
   });
 

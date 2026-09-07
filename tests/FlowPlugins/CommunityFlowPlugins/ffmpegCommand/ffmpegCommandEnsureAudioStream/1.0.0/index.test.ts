@@ -27,6 +27,7 @@ describe('ffmpegCommandEnsureAudioStream Plugin', () => {
               ...stream,
               removed: false,
               outputArgs: [],
+              filters: [],
               inputArgs: [],
               index,
             }),

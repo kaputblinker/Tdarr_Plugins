@@ -252,7 +252,7 @@ var plugin = function (args) {
         + " (removing ".concat(cropPercent.toFixed(1), "% of image)"));
     args.variables.ffmpegCommand.streams.forEach(function (stream) {
         if (stream.codec_type === 'video') {
-            stream.outputArgs.push('-vf', "crop=".concat(crop.w, ":").concat(crop.h, ":").concat(crop.x, ":").concat(crop.y));
+            stream.filters.push("crop=".concat(crop.w, ":").concat(crop.h, ":").concat(crop.x, ":").concat(crop.y));
         }
     });
     // eslint-disable-next-line no-param-reassign

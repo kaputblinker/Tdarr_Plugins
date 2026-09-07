@@ -94,8 +94,40 @@ var details = function () { return ({
     ],
 }); };
 exports.details = details;
+var getTagMap = function (axios, arrHost, headers) { return __awaiter(void 0, void 0, void 0, function () {
+    var res, serverTags;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, axios.get("".concat(arrHost, "/api/v3/tag"), { headers: headers })];
+            case 1:
+                res = _a.sent();
+                serverTags = Array.isArray(res.data) ? res.data : [];
+                return [2 /*return*/, serverTags.reduce(function (acc, tag) {
+                        var id = tag === null || tag === void 0 ? void 0 : tag.id;
+                        var label = tag === null || tag === void 0 ? void 0 : tag.label;
+                        if ((typeof id === 'number' || typeof id === 'string') && typeof label === 'string' && label.length > 0) {
+                            acc[String(id)] = label;
+                        }
+                        return acc;
+                    }, {})];
+        }
+    });
+}); };
+var getParseTagIds = function (parseResponse, arr) {
+    var _a, _b;
+    var rawTags = [];
+    if (arr === 'radarr') {
+        rawTags = ((_a = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.movie) === null || _a === void 0 ? void 0 : _a.tags) || (parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.tags) || [];
+    }
+    else if (arr === 'sonarr') {
+        rawTags = ((_b = parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.series) === null || _b === void 0 ? void 0 : _b.tags) || (parseResponse === null || parseResponse === void 0 ? void 0 : parseResponse.tags) || [];
+    }
+    return Array.isArray(rawTags)
+        ? rawTags.filter(function (tagId) { return typeof tagId === 'number'; })
+        : [];
+};
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, arr, arr_api_key, arr_host, meta, arrHost, headers, arrInfo, res, error_1, res, error_2;
+    var lib, arr, arr_api_key, arr_host, meta, arrHost, headers, arrInfo, res, parseTagIds, allServerTags_1, error_1, res, parseTagIds, allServerTags_2, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -112,17 +144,27 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     'X-Api-Key': arr_api_key,
                     Accept: 'application/json',
                 };
-                if (!(arr === 'radarr')) return [3 /*break*/, 6];
+                arrInfo = null;
+                if (!(arr === 'radarr')) return [3 /*break*/, 7];
                 _a.label = 1;
             case 1:
-                _a.trys.push([1, 4, , 5]);
+                _a.trys.push([1, 5, , 6]);
                 return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/parse?title=").concat(encodeURIComponent((meta === null || meta === void 0 ? void 0 : meta.FileName) || '')), { headers: headers })];
             case 2:
                 res = _a.sent();
+                parseTagIds = getParseTagIds(res.data, arr);
                 arrInfo = { fileId: res.data.movie.id, originalPath: args.originalLibraryFile._id };
                 args.jobLog("Got movieId from Radarr: ".concat(arrInfo.fileId));
-                return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/movie/").concat(arrInfo.fileId), { headers: headers })];
+                return [4 /*yield*/, getTagMap(args.deps.axios, arrHost, headers)];
             case 3:
+                allServerTags_1 = _a.sent();
+                arrInfo.allServerTags = allServerTags_1;
+                arrInfo.fileTags = parseTagIds
+                    .map(function (tagId) { return allServerTags_1[String(tagId)]; })
+                    .filter(function (tagName) { return Boolean(tagName); });
+                args.jobLog("Got file tags from Radarr: ".concat(arrInfo.fileTags.join(', '), ". All server tags: ").concat(Object.values(allServerTags_1).join(', ')));
+                return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/movie/").concat(arrInfo.fileId), { headers: headers })];
+            case 4:
                 res = _a.sent();
                 args.jobLog('Movie info from Radarr:');
                 args.jobLog(JSON.stringify(res.data));
@@ -130,9 +172,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
                 // arrInfo.sceneName = res.data.movieFile.sceneName;
                 arrInfo.data = res.data;
-                args.deps.fsextra.writeJsonSync("".concat(args.workDir, "/arr.json"), arrInfo);
-                return [3 /*break*/, 5];
-            case 4:
+                return [3 /*break*/, 6];
+            case 5:
                 error_1 = _a.sent();
                 if (args.deps.axios.isAxiosError(error_1)) {
                     args.jobLog('Error calling Radarr...');
@@ -141,23 +182,32 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 else {
                     throw error_1;
                 }
-                return [3 /*break*/, 5];
-            case 5: return [3 /*break*/, 13];
-            case 6:
-                if (!(arr === 'sonarr')) return [3 /*break*/, 12];
-                _a.label = 7;
+                return [3 /*break*/, 6];
+            case 6: return [3 /*break*/, 15];
             case 7:
-                _a.trys.push([7, 10, , 11]);
-                return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/parse?title=").concat(encodeURIComponent((meta === null || meta === void 0 ? void 0 : meta.FileName) || '')), { headers: headers })];
+                if (!(arr === 'sonarr')) return [3 /*break*/, 14];
+                _a.label = 8;
             case 8:
+                _a.trys.push([8, 12, , 13]);
+                return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/parse?title=").concat(encodeURIComponent((meta === null || meta === void 0 ? void 0 : meta.FileName) || '')), { headers: headers })];
+            case 9:
                 res = _a.sent();
+                parseTagIds = getParseTagIds(res.data, arr);
                 arrInfo = {
                     fileId: res.data.episodes[0].id,
                     originalPath: args.originalLibraryFile._id,
                 };
                 args.jobLog("Got fileId from Sonarr: ".concat(arrInfo.fileId));
+                return [4 /*yield*/, getTagMap(args.deps.axios, arrHost, headers)];
+            case 10:
+                allServerTags_2 = _a.sent();
+                arrInfo.allServerTags = allServerTags_2;
+                arrInfo.fileTags = parseTagIds
+                    .map(function (tagId) { return allServerTags_2[String(tagId)]; })
+                    .filter(function (tagName) { return Boolean(tagName); });
+                args.jobLog("Got file tags from Sonarr: ".concat(arrInfo.fileTags.join(', '), ". All server tags: ").concat(Object.values(allServerTags_2).join(', ')));
                 return [4 /*yield*/, args.deps.axios.get("".concat(arrHost, "/api/v3/episode/").concat(arrInfo.fileId), { headers: headers })];
-            case 9:
+            case 11:
                 res = _a.sent();
                 args.jobLog('Episode info from Sonarr:');
                 args.jobLog(JSON.stringify(res.data));
@@ -165,9 +215,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
                 // arrInfo.sceneName = res.data.episodeFile.sceneName;
                 arrInfo.data = res.data;
-                args.deps.fsextra.writeJsonSync("".concat(args.workDir, "/arr.json"), arrInfo);
-                return [3 /*break*/, 11];
-            case 10:
+                return [3 /*break*/, 13];
+            case 12:
                 error_2 = _a.sent();
                 if (args.deps.axios.isAxiosError(error_2)) {
                     args.jobLog('Error calling Sonarr...');
@@ -176,16 +225,19 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 else {
                     throw error_2;
                 }
-                return [3 /*break*/, 11];
-            case 11: return [3 /*break*/, 13];
-            case 12:
+                return [3 /*break*/, 13];
+            case 13: return [3 /*break*/, 15];
+            case 14:
                 args.jobLog('No arr specified in plugin inputs.');
-                _a.label = 13;
-            case 13: return [2 /*return*/, {
-                    outputFileObj: args.inputFileObj,
-                    outputNumber: 1,
-                    variables: args.variables,
-                }];
+                _a.label = 15;
+            case 15:
+                args.variables.arrInfo = arrInfo;
+                args.deps.fsextra.writeJsonSync("".concat(args.workDir, "/arr.json"), arrInfo);
+                return [2 /*return*/, {
+                        outputFileObj: args.inputFileObj,
+                        outputNumber: 1,
+                        variables: args.variables,
+                    }];
         }
     });
 }); };

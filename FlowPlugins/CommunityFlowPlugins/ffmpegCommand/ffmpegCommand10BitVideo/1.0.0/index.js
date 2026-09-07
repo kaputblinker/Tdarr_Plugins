@@ -39,7 +39,7 @@ var plugin = function (args) {
         if (stream.codec_type === 'video') {
             stream.outputArgs.push('-profile:v:{outputTypeIndex}', 'main10');
             if (stream.outputArgs.some(function (row) { return row.includes('qsv'); }) && os_1.default.platform() !== 'win32') {
-                stream.outputArgs.push('-vf', 'scale_qsv=format=p010le');
+                stream.filters.push('scale_qsv=format=p010le');
             }
             else {
                 stream.outputArgs.push('-pix_fmt:v:{outputTypeIndex}', 'p010le');

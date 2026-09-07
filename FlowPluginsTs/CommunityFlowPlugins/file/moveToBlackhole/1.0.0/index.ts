@@ -87,6 +87,8 @@ interface IArrInfo {
   originalPath: string,
   releaseGroup?: string,
   sceneName?: string,
+  allServerTags?: Record<string, string>,
+  fileTags?: string[],
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,7 +104,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   let outputFileName = getFileName(args.inputFileObj._id);
 
   // If there's info available from *arr, then parse the file and use that info for naming
-  const arrInfo: IArrInfo | null = args.deps.fsextra.readJsonSync(`${args.workDir}/arr.json`, { throws: false });
+  const arrInfo: IArrInfo | null = args.variables?.arrInfo || null;
   if (arrInfo !== null) {
     // If scene name is available name the file using that
     if (arrInfo.sceneName !== undefined) {

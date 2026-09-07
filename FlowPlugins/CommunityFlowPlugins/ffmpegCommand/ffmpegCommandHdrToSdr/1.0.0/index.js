@@ -32,7 +32,7 @@ var plugin = function (args) {
     (0, flowUtils_1.checkFfmpegCommandInit)(args);
     args.variables.ffmpegCommand.streams.forEach(function (stream) {
         if (stream.codec_type === 'video') {
-            stream.outputArgs.push('-vf', 'zscale=t=linear:npl=100,format=yuv420p');
+            stream.filters.push('zscale=t=linear:npl=100,format=yuv420p');
         }
     });
     return {

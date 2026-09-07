@@ -27,6 +27,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 1,
@@ -38,6 +39,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
           ],
           container: 'mp4',
@@ -83,6 +85,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);
@@ -122,8 +125,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
         (stream: IffmpegCommandStream) => stream.codec_type === 'video',
       );
 
-      expect(videoStream?.outputArgs).not.toContain('-vf');
-      expect(videoStream?.outputArgs).not.toContain('scale_qsv=format=p010le');
+      expect(videoStream?.filters).not.toContain('scale_qsv=format=p010le');
       expect(videoStream?.outputArgs).toContain('-pix_fmt:v:{outputTypeIndex}');
       expect(videoStream?.outputArgs).toContain('p010le');
     });
@@ -141,9 +143,8 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
       expect(videoStream?.outputArgs).toContain('-profile:v:{outputTypeIndex}');
       expect(videoStream?.outputArgs).toContain('main10');
 
-      // Platform-specific behavior - either -vf scale_qsv or -pix_fmt should be present
-      const hasScaleQsv = videoStream?.outputArgs.includes('-vf')
-        && videoStream?.outputArgs.includes('scale_qsv=format=p010le');
+      // Platform-specific behavior - either the scale_qsv filter or -pix_fmt should be present
+      const hasScaleQsv = videoStream?.filters.includes('scale_qsv=format=p010le');
       const hasPixFmt = videoStream?.outputArgs.includes('-pix_fmt:v:{outputTypeIndex}')
         && videoStream?.outputArgs.includes('p010le');
 
@@ -168,7 +169,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
 
         // Should have some form of 10-bit pixel format configuration
         const hasP010le = videoStream?.outputArgs.some((arg) => arg.includes('p010le'));
-        const hasScaleQsv = videoStream?.outputArgs.some((arg) => arg.includes('scale_qsv'));
+        const hasScaleQsv = videoStream?.filters.some((filter) => filter.includes('scale_qsv'));
         expect(hasP010le || hasScaleQsv).toBe(true);
       });
     });
@@ -187,6 +188,7 @@ describe('ffmpegCommand10BitVideo Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
         },
       ];
 

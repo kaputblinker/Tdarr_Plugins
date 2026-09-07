@@ -28,6 +28,7 @@ describe('ffmpegCommandSetVdeoFramerate Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:0'],
               avg_frame_rate: '25/1',
             },
@@ -39,6 +40,7 @@ describe('ffmpegCommandSetVdeoFramerate Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:1'],
             },
           ],
@@ -243,6 +245,7 @@ describe('ffmpegCommandSetVdeoFramerate Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         mapArgs: ['-map', '0:2'],
         avg_frame_rate: '60/1',
       });

@@ -64,7 +64,7 @@ var plugin = function (args) {
             return __assign(__assign({}, normalizedStream), { removed: false, mapArgs: [
                     '-map',
                     "0:".concat(stream.index),
-                ], inputArgs: [], outputArgs: [] });
+                ], inputArgs: [], outputArgs: [], filters: [] });
         }),
         container: container,
         hardwareDecoding: false,

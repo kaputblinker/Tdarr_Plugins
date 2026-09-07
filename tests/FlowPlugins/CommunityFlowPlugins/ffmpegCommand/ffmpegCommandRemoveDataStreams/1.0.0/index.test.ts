@@ -24,6 +24,7 @@ describe('ffmpegCommandRemoveDataStreams Plugin', () => {
               mapArgs: ['-map', '0:0'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 1,
@@ -34,6 +35,7 @@ describe('ffmpegCommandRemoveDataStreams Plugin', () => {
               mapArgs: ['-map', '0:1'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 2,
@@ -44,6 +46,7 @@ describe('ffmpegCommandRemoveDataStreams Plugin', () => {
               mapArgs: ['-map', '0:2'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
           ],
           container: 'mp4',
@@ -100,6 +103,7 @@ describe('ffmpegCommandRemoveDataStreams Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);
@@ -210,6 +214,7 @@ describe('ffmpegCommandRemoveDataStreams Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);

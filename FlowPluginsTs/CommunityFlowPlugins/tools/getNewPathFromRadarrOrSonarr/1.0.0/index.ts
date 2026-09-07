@@ -46,11 +46,11 @@ const details = (): IpluginDetails => ({
         type: 'text',
       },
       tooltip: 'Input your arr host here.'
-      + '\\nExample:\\n'
-      + 'http://192.168.1.1:7878\\n'
-      + 'http://192.168.1.1:8989\\n'
-      + 'https://radarr.domain.com\\n'
-      + 'https://sonarr.domain.com\\n',
+        + '\\nExample:\\n'
+        + 'http://192.168.1.1:7878\\n'
+        + 'http://192.168.1.1:8989\\n'
+        + 'https://radarr.domain.com\\n'
+        + 'https://sonarr.domain.com\\n',
     },
     {
       label: 'Retry limit',
@@ -110,6 +110,8 @@ interface IArrInfo {
   originalPath: string,
   releaseGroup?: string,
   sceneName?: string,
+  allServerTags?: Record<string, string>,
+  fileTags?: string[],
 }
 
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
@@ -135,7 +137,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   let endpoint = '';
   let fileField = '';
 
-  const arrInfo: IArrInfo | null = args.deps.fsextra.readJsonSync(`${args.workDir}/arr.json`, { throws: false });
+  const arrInfo: IArrInfo | null = args.variables?.arrInfo || null;
 
   if (arr === 'radarr' && arrInfo !== null) {
     endpoint = '/api/v3/movie/';

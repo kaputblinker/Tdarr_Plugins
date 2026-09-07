@@ -37,7 +37,7 @@ const plugin = (args:IpluginInputArgs):IpluginOutputArgs => {
 
   args.variables.ffmpegCommand.streams.forEach((stream) => {
     if (stream.codec_type === 'video') {
-      stream.outputArgs.push('-vf', 'zscale=t=linear:npl=100,format=yuv420p');
+      stream.filters.push('zscale=t=linear:npl=100,format=yuv420p');
     }
   });
 

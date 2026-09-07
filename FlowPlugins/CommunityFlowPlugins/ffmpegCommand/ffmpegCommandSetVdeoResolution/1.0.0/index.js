@@ -42,27 +42,26 @@ var details = function () { return ({
     ],
 }); };
 exports.details = details;
-var getVfScale = function (targetResolution) {
+var getScaleFilter = function (targetResolution) {
     switch (targetResolution) {
         case '480p':
-            return ['-vf', 'scale=720:-2'];
+            return 'scale=720:-2';
         case '576p':
-            return ['-vf', 'scale=720:-2'];
+            return 'scale=720:-2';
         case '720p':
-            return ['-vf', 'scale=1280:-2'];
+            return 'scale=1280:-2';
         case '1080p':
-            return ['-vf', 'scale=1920:-2'];
+            return 'scale=1920:-2';
         case '1440p':
-            return ['-vf', 'scale=2560:-2'];
+            return 'scale=2560:-2';
         case '4KUHD':
-            return ['-vf', 'scale=3840:-2'];
+            return 'scale=3840:-2';
         default:
-            return ['-vf', 'scale=1920:-2'];
+            return 'scale=1920:-2';
     }
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) {
-    var _a;
     var lib = require('../../../../../methods/lib')();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
     args.inputs = lib.loadDefaultValues(args.inputs, details);
@@ -74,8 +73,7 @@ var plugin = function (args) {
             if (targetResolution !== args.inputFileObj.video_resolution) {
                 // eslint-disable-next-line no-param-reassign
                 args.variables.ffmpegCommand.shouldProcess = true;
-                var scaleArgs = getVfScale(targetResolution);
-                (_a = stream.outputArgs).push.apply(_a, scaleArgs);
+                stream.filters.push(getScaleFilter(targetResolution));
             }
         }
     }

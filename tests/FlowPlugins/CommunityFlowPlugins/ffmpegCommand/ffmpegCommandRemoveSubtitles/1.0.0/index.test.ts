@@ -25,6 +25,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
               mapArgs: ['-map', '0:0'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 1,
@@ -35,6 +36,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
               mapArgs: ['-map', '0:1'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 2,
@@ -45,6 +47,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
               mapArgs: ['-map', '0:2'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
           ],
           container: 'mp4',
@@ -101,6 +104,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);
@@ -233,6 +237,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);
@@ -259,6 +264,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
 
       const result = plugin(baseArgs);
@@ -315,6 +321,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
         mapArgs: ['-map', `0:${stream.index}`],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       }));
 
       const result = plugin(baseArgs);
@@ -355,6 +362,7 @@ describe('ffmpegCommandRemoveSubtitles Plugin', () => {
         mapArgs: ['-map', `0:${stream.index}`],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       }));
 
       const result = plugin(baseArgs);

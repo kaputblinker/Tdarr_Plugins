@@ -24,6 +24,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
               width: 1280,
               height: 720,
               outputArgs: [],
+              filters: [],
               inputArgs: [],
               removed: false,
               forceEncoding: false,
@@ -49,14 +50,14 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
   describe('Resolution Scaling', () => {
     it.each([
-      ['480p', '720p', ['-vf', 'scale=720:-2']],
-      ['576p', '720p', ['-vf', 'scale=720:-2']],
-      ['720p', '1080p', ['-vf', 'scale=1280:-2']],
-      ['1080p', '720p', ['-vf', 'scale=1920:-2']],
-      ['1440p', '720p', ['-vf', 'scale=2560:-2']],
-      ['4KUHD', '720p', ['-vf', 'scale=3840:-2']],
-      ['unknown', '720p', ['-vf', 'scale=1920:-2']],
-    ])('should set scale filter for %s resolution', (targetRes, currentRes, expectedArgs) => {
+      ['480p', '720p', ['scale=720:-2']],
+      ['576p', '720p', ['scale=720:-2']],
+      ['720p', '1080p', ['scale=1280:-2']],
+      ['1080p', '720p', ['scale=1920:-2']],
+      ['1440p', '720p', ['scale=2560:-2']],
+      ['4KUHD', '720p', ['scale=3840:-2']],
+      ['unknown', '720p', ['scale=1920:-2']],
+    ])('should set scale filter for %s resolution', (targetRes, currentRes, expectedFilters) => {
       baseArgs.inputs.targetResolution = targetRes;
       baseArgs.inputFileObj.video_resolution = currentRes;
 
@@ -65,7 +66,8 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
       expect(result.outputNumber).toBe(1);
       expect(result.outputFileObj).toBe(baseArgs.inputFileObj);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(expectedArgs);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(expectedFilters);
+      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([]);
     });
 
     it.each([
@@ -80,7 +82,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(false);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([]);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual([]);
     });
   });
 
@@ -94,6 +96,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
           width: 1280,
           height: 720,
           outputArgs: [],
+          filters: [],
           inputArgs: [],
           removed: false,
           forceEncoding: false,
@@ -104,6 +107,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
           codec_type: 'audio',
           codec_name: 'aac',
           outputArgs: [],
+          filters: [],
           inputArgs: [],
           removed: false,
           forceEncoding: false,
@@ -116,6 +120,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
           width: 1280,
           height: 720,
           outputArgs: [],
+          filters: [],
           inputArgs: [],
           removed: false,
           forceEncoding: false,
@@ -129,12 +134,12 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-vf', 'scale=1920:-2']);
-      expect(result.variables.ffmpegCommand.streams[1].outputArgs).toEqual([]);
-      expect(result.variables.ffmpegCommand.streams[2].outputArgs).toEqual(['-vf', 'scale=1920:-2']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(['scale=1920:-2']);
+      expect(result.variables.ffmpegCommand.streams[1].filters).toEqual([]);
+      expect(result.variables.ffmpegCommand.streams[2].filters).toEqual(['scale=1920:-2']);
     });
 
-    it('should append to existing outputArgs', () => {
+    it('should leave existing outputArgs untouched', () => {
       baseArgs.variables.ffmpegCommand.streams[0].outputArgs = ['-c:v', 'libx264'];
       baseArgs.inputs.targetResolution = '1080p';
       baseArgs.inputFileObj.video_resolution = '720p';
@@ -143,9 +148,8 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual([
-        '-c:v', 'libx264', '-vf', 'scale=1920:-2',
-      ]);
+      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-c:v', 'libx264']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(['scale=1920:-2']);
     });
 
     it('should handle empty streams array', () => {
@@ -167,7 +171,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-vf', 'scale=1920:-2']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(['scale=1920:-2']);
     });
 
     it('should handle null video_resolution', () => {
@@ -178,7 +182,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-vf', 'scale=1920:-2']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(['scale=1920:-2']);
     });
 
     it('should convert targetResolution to string', () => {
@@ -190,7 +194,7 @@ describe('ffmpegCommandSetVdeoResolution Plugin', () => {
 
       expect(result.outputNumber).toBe(1);
       expect(result.variables.ffmpegCommand.shouldProcess).toBe(true);
-      expect(result.variables.ffmpegCommand.streams[0].outputArgs).toEqual(['-vf', 'scale=1920:-2']);
+      expect(result.variables.ffmpegCommand.streams[0].filters).toEqual(['scale=1920:-2']);
     });
   });
 

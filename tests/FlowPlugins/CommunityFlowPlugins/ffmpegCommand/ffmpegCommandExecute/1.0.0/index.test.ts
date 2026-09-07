@@ -40,6 +40,7 @@ describe('ffmpegCommandExecute Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:0'],
             },
             {
@@ -50,6 +51,7 @@ describe('ffmpegCommandExecute Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:1'],
             },
           ],
@@ -169,6 +171,57 @@ describe('ffmpegCommandExecute Plugin', () => {
     });
   });
 
+  describe('Filter Stacking', () => {
+    const getSpawnArgs = (): string[] => {
+      const { CLI } = require('../../../../../../FlowPluginsTs/FlowHelpers/1.0.0/cliUtils');
+      return CLI.mock.calls[0][0].spawnArgs;
+    };
+
+    it('should merge stacked filters into a single -filter arg per stream', async () => {
+      baseArgs.variables.ffmpegCommand.streams[0].outputArgs = ['-c:{outputIndex}', 'libx264'];
+      baseArgs.variables.ffmpegCommand.streams[0].filters = ['crop=1920:800:0:140', 'scale=1280:-2'];
+
+      await plugin(baseArgs);
+
+      const spawnArgs = getSpawnArgs();
+      expect(spawnArgs).toContain('-filter:0');
+      expect(spawnArgs[spawnArgs.indexOf('-filter:0') + 1]).toBe('crop=1920:800:0:140,scale=1280:-2');
+      expect(spawnArgs.filter((arg) => arg.startsWith('-filter:'))).toHaveLength(1);
+    });
+
+    it('should apply filters to audio streams with the same option', async () => {
+      baseArgs.variables.ffmpegCommand.streams[1].outputArgs = ['-c:{outputIndex}', 'aac'];
+      baseArgs.variables.ffmpegCommand.streams[1].filters = ['loudnorm=I=-24'];
+
+      await plugin(baseArgs);
+
+      const spawnArgs = getSpawnArgs();
+      expect(spawnArgs).toContain('-filter:1');
+      expect(spawnArgs[spawnArgs.indexOf('-filter:1') + 1]).toBe('loudnorm=I=-24');
+    });
+
+    it('should ignore empty filter entries', async () => {
+      baseArgs.variables.ffmpegCommand.streams[0].filters = ['', '  '];
+
+      await plugin(baseArgs);
+
+      const spawnArgs = getSpawnArgs();
+      expect(spawnArgs.some((arg) => arg.startsWith('-filter:'))).toBe(false);
+      expect(spawnArgs).toContain('-c:0');
+      expect(spawnArgs).toContain('copy');
+    });
+
+    it('should not copy a stream which has filters but no encoder', async () => {
+      baseArgs.variables.ffmpegCommand.streams[0].filters = ['crop=1920:800:0:140'];
+
+      await plugin(baseArgs);
+
+      const spawnArgs = getSpawnArgs();
+      expect(spawnArgs).toContain('-filter:0');
+      expect(spawnArgs).not.toContain('-c:0');
+    });
+  });
+
   describe('Input and Output Arguments', () => {
     it('should handle overall input arguments', async () => {
       baseArgs.variables.ffmpegCommand.overallInputArguments = ['-threads', '4'];
@@ -281,6 +334,7 @@ describe('ffmpegCommandExecute Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: ['-c:{outputIndex}', 'libx264'],
+          filters: [],
           mapArgs: ['-map', '0:0'],
         },
         {
@@ -291,6 +345,7 @@ describe('ffmpegCommandExecute Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:1'],
         },
         {
@@ -301,6 +356,7 @@ describe('ffmpegCommandExecute Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: ['-filter:a:{outputTypeIndex}', 'volume=0.8'],
+          filters: [],
           mapArgs: ['-map', '0:2'],
         },
       ];

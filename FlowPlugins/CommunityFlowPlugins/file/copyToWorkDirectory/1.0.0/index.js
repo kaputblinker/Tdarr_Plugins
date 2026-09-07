@@ -77,7 +77,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 originalFileName = (0, fileUtils_1.getFileName)(args.inputFileObj._id);
                 newContainer = (0, fileUtils_1.getContainer)(args.inputFileObj._id);
-                outputPath = args.workDir;
+                outputPath = (0, fileUtils_1.getPluginWorkDir)(args);
                 ouputFilePath = (0, normJoinPath_1.default)({
                     upath: args.deps.upath,
                     paths: [

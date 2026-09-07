@@ -19,6 +19,7 @@ describe('ffmpegCommandSetContainer Plugin', () => {
     forceEncoding: false,
     inputArgs: [],
     outputArgs: [],
+    filters: [],
     mapArgs: ['-map', `0:${index}`],
   });
 
@@ -333,6 +334,7 @@ describe('ffmpegCommandSetContainer Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:0'],
         },
       ] as IffmpegCommandStream[];
@@ -356,6 +358,7 @@ describe('ffmpegCommandSetContainer Plugin', () => {
           forceEncoding: false,
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           mapArgs: ['-map', '0:0'],
         },
       ] as IffmpegCommandStream[];

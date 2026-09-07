@@ -28,6 +28,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
               mapArgs: ['-map', '0:0'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 1,
@@ -38,6 +39,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
               mapArgs: ['-map', '0:1'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
             {
               index: 2,
@@ -48,6 +50,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
               mapArgs: ['-map', '0:2'],
               inputArgs: [],
               outputArgs: [],
+              filters: [],
             },
           ],
           container: 'mp4',
@@ -195,6 +198,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:0'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'eng' },
         },
         {
@@ -206,6 +210,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:1'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'eng' },
         },
         {
@@ -217,6 +222,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:2'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'spa' },
         },
       ];
@@ -371,6 +377,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
         mapArgs: ['-map', '0:3'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
@@ -432,6 +439,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:0'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
         },
         {
           index: 1,
@@ -443,6 +451,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:1'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
         },
         {
           index: 2,
@@ -454,6 +463,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:2'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
         },
       ];
     });
@@ -513,6 +523,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:0'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'eng' },
         },
         {
@@ -524,6 +535,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:1'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'eng' },
         },
         {
@@ -535,6 +547,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:2'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'spa' },
         },
         {
@@ -546,6 +559,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:3'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'eng' },
         },
       ];
@@ -681,6 +695,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:0'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'en' },
         },
         {
@@ -692,6 +707,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:1'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'de' },
         },
         {
@@ -703,6 +719,7 @@ describe('ffmpegCommandRemoveStreamByProperty Plugin', () => {
           mapArgs: ['-map', '0:2'],
           inputArgs: [],
           outputArgs: [],
+          filters: [],
           tags: { language: 'it' },
         },
       ];

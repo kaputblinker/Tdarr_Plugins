@@ -95,9 +95,19 @@ var getOuputStreamTypeIndex = function (streams, stream) {
     }
     return index;
 };
+// Filters are stacked per stream in stream.filters rather than pushed as '-vf'/'-af' args,
+// as ffmpeg only honours the last filter arg it is given for a stream. They are merged here into a
+// single comma separated chain and applied with the stream-type agnostic '-filter:<outputIndex>'.
+var getFilterArgs = function (streams, stream) {
+    var filters = (stream.filters || []).map(function (row) { return row.trim(); }).filter(function (row) { return row !== ''; });
+    if (filters.length === 0) {
+        return [];
+    }
+    return ["-filter:".concat(getOuputStreamIndex(streams, stream)), filters.join(',')];
+};
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cliArgs, _a, shouldProcess, streams, inputArgs, _loop_1, i, idx, outputFilePath, i, stream, spawnArgs, cli, res;
+    var lib, cliArgs, _a, shouldProcess, streams, inputArgs, _loop_1, i, idx, outputFilePath, i, stream, filterArgs, spawnArgs, cli, res;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -141,11 +151,17 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         return "continue";
                     }
                     cliArgs.push.apply(cliArgs, stream.mapArgs);
-                    if (stream.outputArgs.length === 0) {
+                    var filterArgs = getFilterArgs(streams, stream);
+                    args.jobLog("Filter Args for stream ".concat(i, " (").concat(stream.codec_type, "): ").concat(filterArgs));
+                    if (stream.outputArgs.length === 0 && filterArgs.length === 0) {
                         cliArgs.push("-c:".concat(getOuputStreamIndex(streams, stream)), 'copy');
                     }
                     else {
-                        cliArgs.push.apply(cliArgs, stream.outputArgs);
+                        if (stream.outputArgs.length === 0) {
+                            args.jobLog("Stream ".concat(stream.index, " has filters but no encoder set,")
+                                + ' the container default encoder will be used as filtering requires re-encoding');
+                        }
+                        cliArgs.push.apply(cliArgs, __spreadArray(__spreadArray([], stream.outputArgs, false), filterArgs, false));
                     }
                     inputArgs.push.apply(inputArgs, stream.inputArgs);
                 };
@@ -173,11 +189,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     stream = streams[i];
                     if (stream.extraExport) {
                         cliArgs.push.apply(cliArgs, stream.mapArgs);
-                        if (stream.outputArgs.length === 0) {
+                        filterArgs = getFilterArgs(streams, stream);
+                        if (stream.outputArgs.length === 0 && filterArgs.length === 0) {
                             cliArgs.push("-c:".concat(getOuputStreamIndex(streams, stream)), 'copy');
                         }
                         else {
-                            cliArgs.push.apply(cliArgs, stream.outputArgs);
+                            cliArgs.push.apply(cliArgs, __spreadArray(__spreadArray([], stream.outputArgs, false), filterArgs, false));
                         }
                         inputArgs.push.apply(inputArgs, stream.inputArgs);
                     }

@@ -84,6 +84,7 @@ export interface IffmpegCommandStream extends Istreams {
     forceEncoding: boolean,
     inputArgs: string[],
     outputArgs: string[],
+    filters: string[],
 }
 
 export interface IffmpegCommand {

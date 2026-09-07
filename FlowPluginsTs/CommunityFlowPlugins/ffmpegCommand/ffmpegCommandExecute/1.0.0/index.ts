@@ -63,6 +63,19 @@ const getOuputStreamTypeIndex = (streams: IffmpegCommandStream[], stream: Iffmpe
   return index;
 };
 
+// Filters are stacked per stream in stream.filters rather than pushed as '-vf'/'-af' args,
+// as ffmpeg only honours the last filter arg it is given for a stream. They are merged here into a
+// single comma separated chain and applied with the stream-type agnostic '-filter:<outputIndex>'.
+const getFilterArgs = (streams: IffmpegCommandStream[], stream: IffmpegCommandStream): string[] => {
+  const filters = (stream.filters || []).map((row) => row.trim()).filter((row) => row !== '');
+
+  if (filters.length === 0) {
+    return [];
+  }
+
+  return [`-filter:${getOuputStreamIndex(streams, stream)}`, filters.join(',')];
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const lib = require('../../../../../methods/lib')();
@@ -122,10 +135,18 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
 
     cliArgs.push(...stream.mapArgs);
 
-    if (stream.outputArgs.length === 0) {
+    const filterArgs = getFilterArgs(streams, stream);
+    args.jobLog(`Filter Args for stream ${i} (${stream.codec_type}): ${filterArgs}`);
+
+    if (stream.outputArgs.length === 0 && filterArgs.length === 0) {
       cliArgs.push(`-c:${getOuputStreamIndex(streams, stream)}`, 'copy');
     } else {
-      cliArgs.push(...stream.outputArgs);
+      if (stream.outputArgs.length === 0) {
+        args.jobLog(`Stream ${stream.index} has filters but no encoder set,`
+          + ' the container default encoder will be used as filtering requires re-encoding');
+      }
+
+      cliArgs.push(...stream.outputArgs, ...filterArgs);
     }
 
     inputArgs.push(...stream.inputArgs);
@@ -158,10 +179,12 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     if (stream.extraExport) {
       cliArgs.push(...stream.mapArgs);
 
-      if (stream.outputArgs.length === 0) {
+      const filterArgs = getFilterArgs(streams, stream);
+
+      if (stream.outputArgs.length === 0 && filterArgs.length === 0) {
         cliArgs.push(`-c:${getOuputStreamIndex(streams, stream)}`, 'copy');
       } else {
-        cliArgs.push(...stream.outputArgs);
+        cliArgs.push(...stream.outputArgs, ...filterArgs);
       }
 
       inputArgs.push(...stream.inputArgs);

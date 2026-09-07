@@ -140,8 +140,9 @@ var details = function () { return ({
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, arr, arr_api_key, arr_host, retry_delay, retry_limit, outputNum, arrHost, headers, endpoint, fileField, arrInfo, tries, outputPath, res, fileKey, error_1, path_mapping_from, path_mapping_to;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
@@ -160,7 +161,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 };
                 endpoint = '';
                 fileField = '';
-                arrInfo = args.deps.fsextra.readJsonSync("".concat(args.workDir, "/arr.json"), { throws: false });
+                arrInfo = ((_a = args.variables) === null || _a === void 0 ? void 0 : _a.arrInfo) || null;
                 if (arr === 'radarr' && arrInfo !== null) {
                     endpoint = '/api/v3/movie/';
                     fileField = 'movieFile';
@@ -181,32 +182,32 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 }
                 tries = 0;
                 outputPath = arrInfo.originalPath;
-                _a.label = 1;
+                _b.label = 1;
             case 1:
                 if (!(outputPath === arrInfo.originalPath && tries < retry_limit)) return [3 /*break*/, 9];
                 /* eslint-disable no-await-in-loop */
                 tries += 1;
-                _a.label = 2;
+                _b.label = 2;
             case 2:
-                _a.trys.push([2, 7, , 8]);
+                _b.trys.push([2, 7, , 8]);
                 return [4 /*yield*/, args.deps.axios.get("".concat(arrHost).concat(endpoint).concat(arrInfo.fileId), { headers: headers })];
             case 3:
-                res = _a.sent();
+                res = _b.sent();
                 fileKey = fileField;
                 if (!(!res.data.hasFile || res.data[fileKey].path === outputPath)) return [3 /*break*/, 5];
                 args.jobLog('File not imported yet, waiting...');
                 return [4 /*yield*/, new Promise(function (f) { return setTimeout(f, retry_delay * 1000); })];
             case 4:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 6];
             case 5:
                 outputPath = res.data[fileKey].path;
                 outputNum = 1;
                 args.jobLog("File imported as ".concat(outputPath));
-                _a.label = 6;
+                _b.label = 6;
             case 6: return [3 /*break*/, 8];
             case 7:
-                error_1 = _a.sent();
+                error_1 = _b.sent();
                 if (args.deps.axios.isAxiosError(error_1)) {
                     args.jobLog("Error calling ".concat(arr, "..."));
                     args.jobLog(JSON.stringify(error_1));

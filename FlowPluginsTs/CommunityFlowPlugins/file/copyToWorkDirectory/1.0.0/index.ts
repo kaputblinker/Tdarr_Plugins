@@ -1,4 +1,4 @@
-import { getContainer, getFileName } from '../../../../FlowHelpers/1.0.0/fileUtils';
+import { getContainer, getFileName, getPluginWorkDir } from '../../../../FlowHelpers/1.0.0/fileUtils';
 import {
   IpluginDetails,
   IpluginInputArgs,
@@ -11,7 +11,7 @@ import fileMoveOrCopy from '../../../../FlowHelpers/1.0.0/fileMoveOrCopy';
 const details = (): IpluginDetails => ({
   name: 'Copy to Working Directory',
   description: 'Copy the working file to the working directory of the Tdarr worker. '
-  + 'Useful if you want to copy the file to the library cache before transcoding begins',
+    + 'Useful if you want to copy the file to the library cache before transcoding begins',
   style: {
     borderColor: 'green',
   },
@@ -40,7 +40,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const originalFileName = getFileName(args.inputFileObj._id);
   const newContainer = getContainer(args.inputFileObj._id);
 
-  const outputPath = args.workDir;
+  const outputPath = getPluginWorkDir(args);
 
   const ouputFilePath = normJoinPath({
     upath: args.deps.upath,

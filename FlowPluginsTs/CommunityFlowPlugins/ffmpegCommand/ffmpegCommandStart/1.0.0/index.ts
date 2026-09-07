@@ -9,10 +9,10 @@ import {
 import { Istreams } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
 
 /* eslint-disable no-param-reassign */
-const details = () :IpluginDetails => ({
+const details = (): IpluginDetails => ({
   name: 'Begin Command',
   description: 'Begin creating the FFmpeg command for the current working file.'
-   + ' Should be used before any other FFmpeg command plugins.',
+    + ' Should be used before any other FFmpeg command plugins.',
   style: {
     borderColor: 'green',
   },
@@ -32,7 +32,7 @@ const details = () :IpluginDetails => ({
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const plugin = (args:IpluginInputArgs):IpluginOutputArgs => {
+const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   const lib = require('../../../../../methods/lib')();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
@@ -52,7 +52,7 @@ const plugin = (args:IpluginInputArgs):IpluginOutputArgs => {
   const ffmpegCommand = {
     init: true,
     inputFiles: [],
-    streams: streams.map((stream:Istreams) => {
+    streams: streams.map((stream: Istreams) => {
       const normalizedStream = {
         ...stream,
       };
@@ -70,6 +70,7 @@ const plugin = (args:IpluginInputArgs):IpluginOutputArgs => {
         ],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       };
     }),
     container,

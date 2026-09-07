@@ -55,6 +55,7 @@ describe('ffmpegCommandStart Plugin', () => {
         mapArgs: ['-map', '0:0'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
       expect(result.variables.ffmpegCommand.streams[1]).toMatchObject({
         index: 1,
@@ -64,6 +65,7 @@ describe('ffmpegCommandStart Plugin', () => {
         mapArgs: ['-map', '0:1'],
         inputArgs: [],
         outputArgs: [],
+        filters: [],
       });
     });
 

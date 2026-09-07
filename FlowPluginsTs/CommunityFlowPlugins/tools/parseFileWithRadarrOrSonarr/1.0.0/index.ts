@@ -66,8 +66,42 @@ interface IArrInfo {
   originalPath: string,
   releaseGroup?: string,
   sceneName?: string,
+  allServerTags?: Record<string, string>,
+  fileTags?: string[],
   data?: any,
 }
+
+const getTagMap = async (
+  axios: any,
+  arrHost: string,
+  headers: Record<string, string>,
+): Promise<Record<string, string>> => {
+  const res = await axios.get(`${arrHost}/api/v3/tag`, { headers });
+  const serverTags = Array.isArray(res.data) ? res.data : [];
+
+  return serverTags.reduce((acc: Record<string, string>, tag: any) => {
+    const id = tag?.id;
+    const label = tag?.label;
+    if ((typeof id === 'number' || typeof id === 'string') && typeof label === 'string' && label.length > 0) {
+      acc[String(id)] = label;
+    }
+    return acc;
+  }, {});
+};
+
+const getParseTagIds = (parseResponse: any, arr: string): number[] => {
+  let rawTags: any[] = [];
+
+  if (arr === 'radarr') {
+    rawTags = parseResponse?.movie?.tags || parseResponse?.tags || [];
+  } else if (arr === 'sonarr') {
+    rawTags = parseResponse?.series?.tags || parseResponse?.tags || [];
+  }
+
+  return Array.isArray(rawTags)
+    ? rawTags.filter((tagId) => typeof tagId === 'number')
+    : [];
+};
 
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const lib = require('../../../../../methods/lib')();
@@ -87,7 +121,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     Accept: 'application/json',
   };
 
-  let arrInfo: IArrInfo;
+  let arrInfo: IArrInfo | null = null;
 
   if (arr === 'radarr') {
     try {
@@ -95,8 +129,18 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         `${arrHost}/api/v3/parse?title=${encodeURIComponent(meta?.FileName || '')}`,
         { headers },
       );
+      const parseTagIds = getParseTagIds(res.data, arr);
       arrInfo = { fileId: res.data.movie.id, originalPath: args.originalLibraryFile._id };
       args.jobLog(`Got movieId from Radarr: ${arrInfo.fileId}`);
+
+      const allServerTags = await getTagMap(args.deps.axios, arrHost, headers);
+      arrInfo.allServerTags = allServerTags;
+      arrInfo.fileTags = parseTagIds
+        .map((tagId) => allServerTags[String(tagId)])
+        .filter((tagName): tagName is string => Boolean(tagName));
+
+
+      args.jobLog(`Got file tags from Radarr: ${arrInfo.fileTags.join(', ')}. All server tags: ${Object.values(allServerTags).join(', ')}`);
 
       res = await args.deps.axios.get(
         `${arrHost}/api/v3/movie/${arrInfo.fileId}`,
@@ -110,8 +154,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       // arrInfo.releaseGroup = res.data.movieFile.releaseGroup;
       // arrInfo.sceneName = res.data.movieFile.sceneName;
       arrInfo.data = res.data;
-
-      args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
     } catch (error) {
       if (args.deps.axios.isAxiosError(error)) {
         args.jobLog('Error calling Radarr...');
@@ -126,11 +168,20 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         `${arrHost}/api/v3/parse?title=${encodeURIComponent(meta?.FileName || '')}`,
         { headers },
       );
+      const parseTagIds = getParseTagIds(res.data, arr);
       arrInfo = {
         fileId: res.data.episodes[0].id,
         originalPath: args.originalLibraryFile._id,
       };
       args.jobLog(`Got fileId from Sonarr: ${arrInfo.fileId}`);
+
+      const allServerTags = await getTagMap(args.deps.axios, arrHost, headers);
+      arrInfo.allServerTags = allServerTags;
+      arrInfo.fileTags = parseTagIds
+        .map((tagId) => allServerTags[String(tagId)])
+        .filter((tagName): tagName is string => Boolean(tagName));
+
+      args.jobLog(`Got file tags from Sonarr: ${arrInfo.fileTags.join(', ')}. All server tags: ${Object.values(allServerTags).join(', ')}`);
 
       res = await args.deps.axios.get(
         `${arrHost}/api/v3/episode/${arrInfo.fileId}`,
@@ -144,7 +195,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       // arrInfo.releaseGroup = res.data.episodeFile.releaseGroup;
       // arrInfo.sceneName = res.data.episodeFile.sceneName;
       arrInfo.data = res.data;
-      args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
     } catch (error) {
       if (args.deps.axios.isAxiosError(error)) {
         args.jobLog('Error calling Sonarr...');
@@ -156,6 +206,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   } else {
     args.jobLog('No arr specified in plugin inputs.');
   }
+  args.variables.arrInfo = arrInfo;
+  args.deps.fsextra.writeJsonSync(`${args.workDir}/arr.json`, arrInfo);
 
   return {
     outputFileObj: args.inputFileObj,

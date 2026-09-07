@@ -119,15 +119,16 @@ exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, allFiles, outputFileName, arrInfo, outputDirectory, filesInDir, subsDir, fileExtensions, subFiles, i, originalLibraryFolder, originalSubFiles, i;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 allFiles = args.inputs.allFiles;
                 outputFileName = (0, fileUtils_1.getFileName)(args.inputFileObj._id);
-                arrInfo = args.deps.fsextra.readJsonSync("".concat(args.workDir, "/arr.json"), { throws: false });
+                arrInfo = ((_a = args.variables) === null || _a === void 0 ? void 0 : _a.arrInfo) || null;
                 if (arrInfo !== null) {
                     // If scene name is available name the file using that
                     if (arrInfo.sceneName !== undefined) {
@@ -161,7 +162,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (!args.deps.fsextra.pathExistsSync(subsDir)) return [3 /*break*/, 2];
                 return [4 /*yield*/, fs_1.promises.readdir(subsDir)];
             case 1:
-                subFiles = (_a.sent())
+                subFiles = (_b.sent())
                     .map(function (row) { return ({
                     source: "".concat(subsDir, "/").concat(row),
                     destination: (0, normJoinPath_1.default)({
@@ -176,10 +177,10 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     subFiles = subFiles.filter(function (row) { return fileExtensions.includes((0, fileUtils_1.getContainer)(row.source)); });
                 }
                 filesInDir.push.apply(filesInDir, subFiles);
-                _a.label = 2;
+                _b.label = 2;
             case 2:
                 i = 0;
-                _a.label = 3;
+                _b.label = 3;
             case 3:
                 if (!(i < filesInDir.length)) return [3 /*break*/, 6];
                 // eslint-disable-next-line no-await-in-loop
@@ -191,8 +192,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     })];
             case 4:
                 // eslint-disable-next-line no-await-in-loop
-                _a.sent();
-                _a.label = 5;
+                _b.sent();
+                _b.label = 5;
             case 5:
                 i += 1;
                 return [3 /*break*/, 3];
@@ -200,7 +201,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 originalLibraryFolder = (0, fileUtils_1.getFileAbosluteDir)(args.originalLibraryFile._id);
                 return [4 /*yield*/, fs_1.promises.readdir(originalLibraryFolder)];
             case 7:
-                originalSubFiles = (_a.sent())
+                originalSubFiles = (_b.sent())
                     .map(function (row) { return ({
                     source: "".concat(originalLibraryFolder, "/").concat(row),
                     destination: (0, normJoinPath_1.default)({
@@ -214,7 +215,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     .filter(function (row) { return (0, fileUtils_1.getFileName)(row.source).startsWith((0, fileUtils_1.getFileName)(args.originalLibraryFile._id)); })
                     .filter(function (row) { return (0, fileUtils_1.getContainer)(row.source) === 'srt'; });
                 i = 0;
-                _a.label = 8;
+                _b.label = 8;
             case 8:
                 if (!(i < originalSubFiles.length)) return [3 /*break*/, 11];
                 // eslint-disable-next-line no-await-in-loop
@@ -226,8 +227,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     })];
             case 9:
                 // eslint-disable-next-line no-await-in-loop
-                _a.sent();
-                _a.label = 10;
+                _b.sent();
+                _b.label = 10;
             case 10:
                 i += 1;
                 return [3 /*break*/, 8];

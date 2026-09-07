@@ -295,7 +295,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
 
   args.variables.ffmpegCommand.streams.forEach((stream) => {
     if (stream.codec_type === 'video') {
-      stream.outputArgs.push('-vf', `crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
+      stream.filters.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
     }
   });
 

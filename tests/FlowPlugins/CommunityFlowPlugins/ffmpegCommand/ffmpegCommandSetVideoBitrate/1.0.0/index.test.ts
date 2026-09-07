@@ -29,6 +29,7 @@ describe('ffmpegCommandSetVideoBitrate Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:0'],
             },
             {
@@ -39,6 +40,7 @@ describe('ffmpegCommandSetVideoBitrate Plugin', () => {
               forceEncoding: false,
               inputArgs: [],
               outputArgs: [],
+              filters: [],
               mapArgs: ['-map', '0:1'],
             },
           ],
@@ -175,6 +177,7 @@ describe('ffmpegCommandSetVideoBitrate Plugin', () => {
         forceEncoding: false,
         inputArgs: [],
         outputArgs: [],
+        filters: [],
         mapArgs: ['-map', '0:2'],
       });
 
